@@ -1,0 +1,10 @@
+{
+  "development": {
+    "storage": "data/db.sqlite",
+    "dialect": "sqlite"
+  },
+  "production": {
+    "storage": "data/db.sqlite",
+    "dialect": "sqlite"
+  }
+}

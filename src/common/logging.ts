@@ -12,6 +12,7 @@ import stringify from 'safe-stable-stringify';
 import {SPLAT, LEVEL, MESSAGE} from 'triple-beam';
 import {Symbol} from "typescript-json-schema";
 import {fileOrDirectoryIsWriteable} from "../utils/io.js";
+import {capitalize} from "../utils/index.js";
 
 const {combine, printf, timestamp, label, splat, errors} = format;
 
@@ -21,7 +22,7 @@ export let logPath = path.resolve(dataDir, `./logs`);
 
 winston.loggers.add('noop', {transports: [new NullTransport()]});
 
-export const getLogger = (config: LogConfig = {}, name = 'app'): Logger => {
+export const getLogger = (config: LogConfig = {}, name = 'App'): Logger => {
 
     if (!winston.loggers.has(name)) {
         const errors: (Error | string)[] = [];
@@ -84,7 +85,7 @@ export const getLogger = (config: LogConfig = {}, name = 'app'): Logger => {
 
         const loggerOptions: winston.LoggerOptions = {
             level: level,
-            format: labelledFormat(),
+            format: labelledFormat(name),
             transports: myTransports,
         };
 
@@ -165,7 +166,7 @@ export const defaultFormat = (defaultLabel = 'App') => printf(({
 });
 
 export const labelledFormat = (labelName = 'App') => {
-    const l = label({label: labelName, message: false});
+    const l = label({label: capitalize(labelName), message: false});
     return combine(
         timestamp(
             {
@@ -175,7 +176,7 @@ export const labelledFormat = (labelName = 'App') => {
         l,
         s,
         errorAwareFormat,
-        defaultFormat(labelName),
+        defaultFormat(capitalize(labelName)),
     );
 }
 

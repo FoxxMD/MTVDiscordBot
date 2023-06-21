@@ -1,9 +1,12 @@
 import {getLogger} from "./logging.js";
 import path from "path";
-import {dataDir} from "./index.js";
+import {dataDir, projectDir} from "./index.js";
 import {Sequelize} from "sequelize";
+import {Umzug, SequelizeStorage} from "umzug";
 import {OperatorConfig} from "./infrastructure/OperatorConfig.js";
 import {fileOrDirectoryIsWriteable} from "../utils/io.js";
+import {LogFn} from "umzug/lib/types.js";
+import {Logger} from "@foxxmd/winston";
 
 export const createDb = (config: OperatorConfig) => {
     const logger = getLogger(config.logging, 'DB');
@@ -33,8 +36,52 @@ export const createDb = (config: OperatorConfig) => {
     const sequelize = new Sequelize({
         dialect: 'sqlite',
         storage: dbPath,
-        logging: logOption
+        logging: logOption,
     });
 
     return sequelize;
+}
+
+const logFunc = (payload: Record<string, unknown>) => {
+    const parts: string[] = [payload.event as string];
+    if(payload.name !== undefined) {
+        parts.push(` => ${payload.name}`);
+    }
+    if(payload.durationSeconds !== undefined) {
+        parts.push(` (${payload.durationSeconds}s)`);
+    }
+    return parts.join('');
+}
+
+export const runMigrations = async (db: Sequelize): Promise<void> => {
+
+    const logger = getLogger(undefined, 'DB');
+
+    //const logFunc = umzugLoggerFunc(logger);
+
+    const umzug = new Umzug({
+        migrations: {
+            glob: path.resolve(projectDir, 'src/common/db/migrations/*.js'),
+            resolve: ({ name, path, context }) => {
+                const migration = require(path)
+                return {
+                    // adjust the parameters Umzug will
+                    // pass to migration methods when called
+                    name,
+                    up: async () => migration.up(context, Sequelize),
+                    down: async () => migration.down(context, Sequelize),
+                }
+            },
+        },
+        context: db.getQueryInterface(),
+        storage: new SequelizeStorage({sequelize: db}),
+        logger: {
+            info: (msg) => logger.info(logFunc(msg)),
+            warn: (msg) => logger.warn(logFunc(msg)),
+            error: (msg) => logger.error(logFunc(msg)),
+            debug: (msg) => logger.debug(logFunc(msg)),
+        }
+    });
+
+    await umzug.up();
 }
