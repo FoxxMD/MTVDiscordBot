@@ -1,0 +1,4 @@
+token: MY_DISCORD_TOKEN
+logging:
+  level: 'debug'
+  file: 'warn'
