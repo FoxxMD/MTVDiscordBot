@@ -1,5 +1,5 @@
 import path from "path";
-import {projectDir} from "./index.js";
+import {dataDir, projectDir} from "./index.js";
 import winston, {format, Logger} from '@foxxmd/winston';
 import {DuplexTransport} from "winston-duplex";
 import {asLogOptions, LogConfig, LogInfo, LogLevel, LogOptions} from "./infrastructure/Atomic.js";
@@ -17,10 +17,7 @@ const {combine, printf, timestamp, label, splat, errors} = format;
 
 const {transports} = winston;
 
-export let logPath = path.resolve(projectDir, `./logs`);
-if (typeof process.env.DATA_DIR === 'string') {
-    logPath = path.resolve(process.env.DATA_DIR, './logs');
-}
+export let logPath = path.resolve(dataDir, `./logs`);
 
 winston.loggers.add('noop', {transports: [new NullTransport()]});
 

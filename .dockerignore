@@ -15,3 +15,6 @@ config/*.bak
 .flatpak-builder
 flatpak/generated-sources.json
 flatpak/.flatpak-builder
+db.sqlite
+.env
+/data

@@ -1,6 +1,6 @@
 import winston, {Logger} from "@foxxmd/winston";
 import path from "path";
-import {projectDir} from "../index.js";
+import {dataDir, projectDir} from "../index.js";
 import {readFile} from "../../utils/io.js";
 import {ErrorWithCause} from "pony-cause";
 import {parseFromYamlToObject} from "./ConfigUtil.js";
@@ -70,14 +70,11 @@ export const parseConfigFromSources = async () => {
 
     const initLogger = winston.loggers.get('init');
 
-    const dataDir = process.env.DATA_DIR || path.resolve(projectDir, `./data`)
-
-    initLogger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
-
     let configDoc: YamlOperatorConfigDocument
     let configFromFile: OperatorJsonConfig = {};
 
     const operatorConfig = `${dataDir}/config.yaml`;
+    initLogger.debug(`Config File Location: ${operatorConfig}`);
     let rawConfig = '';
     try {
         rawConfig = await readFile(operatorConfig, {throwOnNotFound: false}) ?? '';

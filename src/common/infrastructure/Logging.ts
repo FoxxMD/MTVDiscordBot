@@ -21,4 +21,6 @@ export interface LoggingOptions {
      * Specify the minimum log level streamed to the console (or docker container)
      * */
     console?: LogLevel
+
+    db?: boolean
 }
