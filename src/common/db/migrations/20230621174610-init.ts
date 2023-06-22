@@ -161,11 +161,95 @@ const migration: Migration = {
                 type: Sequelize.INTEGER.UNSIGNED
             },
         });
+
+        await queryInterface.createTable('SubmissionTrustLevels', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            acceptableSubmissionsThreshold: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            name: {
+                type: Sequelize.STRING
+            },
+            allowedSubmissions: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            timePeriod: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            description: {
+                type: Sequelize.STRING
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+        });
+
+        await queryInterface.createTable('UserTrustLevels', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            userId: {
+                allowNull: false,
+                onDelete: 'RESTRICT',
+                onUpdate: 'CASCADE',
+                references: {
+                    model: 'Users',
+                    key: 'id'
+                },
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            givenById: {
+                allowNull: true,
+                onDelete: 'RESTRICT',
+                onUpdate: 'CASCADE',
+                references: {
+                    model: 'Users',
+                    key: 'id'
+                },
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            trustLevelId: {
+                allowNull: false,
+                onDelete: 'RESTRICT',
+                onUpdate: 'CASCADE',
+                references: {
+                    model: 'SubmissionTrustLevels',
+                    key: 'id'
+                },
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+        });
+        await queryInterface.addIndex('UserTrustLevels', ['userId'], {type: 'UNIQUE'});
     },
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('Users');
         await queryInterface.dropTable('VideoSubmissions');
         await queryInterface.dropTable('Videos');
+        await queryInterface.dropTable('Creators');
+        await queryInterface.dropTable('UserCreators');
+        await queryInterface.dropTable('SubmissionTrustLevels');
+        await queryInterface.dropTable('UserTrustLevels');
     }
 };
 module.exports = {up: migration.up, down: migration.down};

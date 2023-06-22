@@ -32,8 +32,21 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
 
         const db = await initDB(config);
 
-        const [user] = await User.upsert({
-            name: 'foxxmd#0'
+        let user = await User.findOne({where: {id: 1}, include: {all: true, nested: true}});
+
+        if(user === null) {
+            const newUser = await User.create({
+                name: 'foxxmd#0'
+            });
+            user = newUser;
+        }
+
+        if(user.trustLevel !== undefined && user.trustLevel !== null) {
+            await user.trustLevel.destroy();
+        }
+
+        await user.createTrustLevel({
+            trustLevelId: 2
         });
 
         const [creator] = await Creator.upsert({

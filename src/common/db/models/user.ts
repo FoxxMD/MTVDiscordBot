@@ -11,14 +11,18 @@ import {
   HasManyAddAssociationMixin,
   HasManyRemoveAssociationMixin,
   HasManyCreateAssociationMixin,
-    BelongsToManyAddAssociationMixin,
-    BelongsToManyCreateAssociationMixin,
-    BelongsToManyGetAssociationsMixin
+  BelongsToManyAddAssociationMixin,
+  BelongsToManyCreateAssociationMixin,
+  BelongsToManyGetAssociationsMixin,
+  HasOneCreateAssociationMixin,
+  HasOneGetAssociationMixin,
+  HasOneSetAssociationMixin
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
+import {UserTrustLevel} from "./UserTrustLevel.js";
 
-export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'creators' }>, InferCreationAttributes<User>> {
+export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'creators' | 'trustLevel' }>, InferCreationAttributes<User, { omit: 'submissions' | 'creators' | 'trustLevel' }>> {
 
   declare id: CreationOptional<number>;
   declare name: string;
@@ -35,12 +39,18 @@ export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'c
   declare addCreator: BelongsToManyAddAssociationMixin<Creator, 'CreatorId'>;
   declare getCreators: BelongsToManyGetAssociationsMixin<Creator>;
 
+  declare getTrustLevel: HasOneGetAssociationMixin<UserTrustLevel>;
+  declare createTrustLevel: HasOneCreateAssociationMixin<UserTrustLevel>;
+  // declare setTrustLevel: HasOneSetAssociationMixin<UserTrustLevel, 'id'>;
+
   declare submissions?: NonAttribute<VideoSubmission[]>;
   declare creators?: NonAttribute<Creator[]>;
+  declare trustLevel?: NonAttribute<UserTrustLevel>;
 
   declare static associations: {
     submissions: Association<User, VideoSubmission>;
     creators: Association<User, Creator>
+    trustLevel: Association<User, UserTrustLevel>
   };
 }
 
@@ -77,6 +87,7 @@ export const associate = () => {
     as: 'submissions'
   });
   User.belongsToMany(Creator, {through: 'UserCreators'});
+  User.hasOne(UserTrustLevel, {foreignKey: 'userId', as: 'trustLevel'});
 }
 
 // module.exports = (sequelize, DataTypes) => {
