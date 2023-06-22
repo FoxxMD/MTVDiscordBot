@@ -6,9 +6,11 @@ import {Sequelize} from "sequelize";
 import {DiscordCredentials} from "../common/infrastructure/OperatorConfig.js";
 import {ErrorWithCause} from "pony-cause";
 import {Logger} from "@foxxmd/winston";
+import {mergeArr} from "../utils/index.js";
 
-export const initCommands = async (client: BotClient, credentials: DiscordCredentials, db: Sequelize, logger: Logger) => {
+export const initCommands = async (client: BotClient, credentials: DiscordCredentials, db: Sequelize, parentLogger: Logger) => {
 
+    const logger = parentLogger.child({labels: ['Commands']}, mergeArr);
 
     const slashCommandData = [];
 
@@ -32,7 +34,7 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
                     // gather json for registering commands
                     slashCommandData.push(command.data.toJSON());
                 } else {
-                    logger.warn(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`, {leaf: 'Commands'});
+                    logger.warn(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
                 }
             }
         }
@@ -40,7 +42,7 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
         throw e;
     }
 
-    logger.info(`Found ${slashCommandData.length} commands in ${commandFolders.length} folders`, {leaf: 'Commands'});
+    logger.info(`Found ${slashCommandData.length} commands in ${commandFolders.length} folders`);
 
     // setup event listener for handling interactions
     client.on(Events.InteractionCreate, async interaction => {
@@ -49,12 +51,12 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
         const command = (interaction.client as BotClient).commands.get(interaction.commandName);
 
         if (!command) {
-            logger.error(`No command matching ${interaction.commandName} was found.`, {leaf: 'Commands'});
+            logger.error(`No command matching ${interaction.commandName} was found.`);
             return;
         }
 
         try {
-            await command.execute(interaction, db);
+            await command.execute(interaction, db, logger);
         } catch (error) {
             console.error(error);
             if (interaction.replied || interaction.deferred) {
@@ -81,7 +83,7 @@ export const registerGuildCommands = async (credentials: DiscordCredentials, gui
 
     const rest = new REST().setToken(credentials.token);
     try {
-        logger.info(`Started refreshing ${slashCommandData.length} application (/) commands.`, {leaf: 'Commands'});
+        logger.info(`Started refreshing ${slashCommandData.length} application (/) commands.`);
 
         // The put method is used to fully refresh all commands in the guild with the current set
         const data = await rest.put(
@@ -89,7 +91,7 @@ export const registerGuildCommands = async (credentials: DiscordCredentials, gui
             {body: slashCommandData},
         ) as any[];
 
-        logger.info(`Successfully reloaded ${data.length} application (/) commands.`, {leaf: 'Commands'});
+        logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
     } catch (error) {
         // And of course, make sure you catch and log any errors!
         throw new ErrorWithCause(`Failed to register slash commands for guild ${guildId}`, {cause: error});

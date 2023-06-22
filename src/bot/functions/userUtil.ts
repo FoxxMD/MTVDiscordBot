@@ -9,13 +9,12 @@ export const buildStandingProfile = async (user: User) => {
     const [upVotes, downVotes] = submissions.reduce((acc, curr) => {
         return [acc[0] + curr.upvotes, acc[1] + curr.downvotes];
     }, [0, 0]);
-    const userLevel = await user.getTrustLevel();
     const creators = await user.getCreators();
 
     const embed = new EmbedBuilder()
         .setColor(0x0099FF)
         .setTitle('Your Standing')
-        .setDescription(`Level: ${userLevel.level.name}`)
+        .setDescription(`Level: ${user.trustLevel.level.name}`)
         .setTimestamp()
 
     if (creators.length > 0) {

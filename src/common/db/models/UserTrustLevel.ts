@@ -7,9 +7,8 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin, ForeignKey
+  NonAttribute, ForeignKey
 } from "sequelize";
-import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
 import {User} from "./user.js";
 import {SubmissionTrustLevel} from "./SubmissionTrustLevel.js";
@@ -51,5 +50,5 @@ export const init = (sequelize: Sequelize) => {
 export const associate = () => {
   UserTrustLevel.belongsTo(User, {as: 'user', foreignKey: 'userId'});
   UserTrustLevel.belongsTo(User, {as: 'givenBy', foreignKey: 'givenById'});
-  UserTrustLevel.belongsTo(SubmissionTrustLevel, {targetKey: 'id', foreignKey: 'trustLevelId'});
+  UserTrustLevel.belongsTo(SubmissionTrustLevel, {as: 'level', targetKey: 'id', foreignKey: 'trustLevelId'});
 }

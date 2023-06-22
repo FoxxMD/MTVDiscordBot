@@ -9,13 +9,10 @@ import {getLogger, isLogLineMinLevel, logLevels} from "./common/logging.js";
 import {parseConfigFromSources} from "./common/config/ConfigBuilder.js";
 import {initDB} from "./common/db/index.js";
 import {dataDir} from "./common/index.js";
-//import {initCommands, registerGuildCommands} from "./command/handler.js";
 import {Events, GatewayIntentBits} from "discord.js";
 import {BotClient} from "./BotClient.js";
-import pEvent from 'p-event'
 import {Bot} from "./bot/Bot.js";
 import {mergeArr} from "./utils/index.js";
-import {initCommands} from "./command/handler.js";
 
 dayjs.extend(utc)
 dayjs.extend(isBetween);
@@ -42,7 +39,6 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
                 //GatewayIntentBits.GuildModeration
             ]
         })
-//1411165318208
         const db = await initDB(config);
 
         const clientLogger = logger.child({labels: ['Discord']}, mergeArr);
