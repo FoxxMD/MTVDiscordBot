@@ -1,14 +1,15 @@
-import {getLogger} from "./logging.js";
+import {getLogger} from "../logging.js";
 import path from "path";
-import {dataDir, projectDir} from "./index.js";
+import {dataDir, projectDir} from "../index.js";
 import {Sequelize} from "sequelize";
 import {Umzug, SequelizeStorage} from "umzug";
-import {OperatorConfig} from "./infrastructure/OperatorConfig.js";
-import {fileOrDirectoryIsWriteable} from "../utils/io.js";
+import {OperatorConfig} from "../infrastructure/OperatorConfig.js";
+import {fileOrDirectoryIsWriteable} from "../../utils/io.js";
 import {LogFn} from "umzug/lib/types.js";
 import {Logger} from "@foxxmd/winston";
+import {setupMappings} from "./setup.js";
 
-export const createDb = (config: OperatorConfig) => {
+export const initDB = async (config: OperatorConfig) => {
     const logger = getLogger(config.logging, 'DB');
 
     let dbPath = path.resolve(dataDir, `db.sqlite`);
@@ -39,6 +40,10 @@ export const createDb = (config: OperatorConfig) => {
         logging: logOption,
     });
 
+    setupMappings(sequelize);
+
+    await runMigrations(sequelize);
+
     return sequelize;
 }
 
@@ -53,7 +58,7 @@ const logFunc = (payload: Record<string, unknown>) => {
     return parts.join('');
 }
 
-export const runMigrations = async (db: Sequelize): Promise<void> => {
+const runMigrations = async (db: Sequelize): Promise<void> => {
 
     const logger = getLogger(undefined, 'DB');
 
@@ -82,6 +87,13 @@ export const runMigrations = async (db: Sequelize): Promise<void> => {
             debug: (msg) => logger.debug(logFunc(msg)),
         }
     });
+
+    const pending = await umzug.pending();
+    if(pending.length === 0) {
+        logger.info('No pending migrations!');
+    } else {
+        logger.info(`${pending.length} pending migrations. Will migrate now.`);
+    }
 
     await umzug.up();
 }

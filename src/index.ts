@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import {Logger} from "@foxxmd/winston";
 import {getLogger} from "./common/logging.js";
 import {parseConfigFromSources} from "./common/config/ConfigBuilder.js";
-import {createDb, runMigrations} from "./common/db.js";
+import {initDB} from "./common/db/index.js";
 import {dataDir} from "./common/index.js";
 
 dayjs.extend(utc)
@@ -26,8 +26,7 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
         logger = getLogger(config.logging);
         logger.info(`Discord token: ${config.credentials.discord}`);
 
-        const db = createDb(config);
-        await runMigrations(db);
+        const db = await initDB(config);
     } catch (e) {
         logger.error('Exited with uncaught error');
         logger.error(e);
