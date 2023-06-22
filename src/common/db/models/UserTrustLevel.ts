@@ -27,6 +27,7 @@ export class UserTrustLevel extends Model<InferAttributes<UserTrustLevel>, Infer
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
 }
 
 export const init = (sequelize: Sequelize) => {

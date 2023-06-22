@@ -1,6 +1,21 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
+        "DiscordCredentials": {
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "clientId",
+                "token"
+            ],
+            "type": "object"
+        },
         "LogLevel": {
             "enum": [
                 "debug",
@@ -16,6 +31,9 @@
                 "console": {
                     "$ref": "#/definitions/LogLevel",
                     "description": "Specify the minimum log level streamed to the console (or docker container)"
+                },
+                "db": {
+                    "type": "boolean"
                 },
                 "file": {
                     "description": "Specify the minimum log level to output to rotating files. If `false` no log files will be created.",
@@ -45,12 +63,9 @@
         "credentials": {
             "properties": {
                 "discord": {
-                    "type": "string"
+                    "$ref": "#/definitions/DiscordCredentials"
                 }
             },
-            "required": [
-                "discord"
-            ],
             "type": "object"
         },
         "logging": {

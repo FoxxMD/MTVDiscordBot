@@ -1,4 +1,7 @@
-token: MY_DISCORD_TOKEN
+credentials:
+  discord:
+    token: MY_APP_TOKEN
+    clientId: MY_APP_CLIENT_ID
 logging:
   level: 'debug'
   file: 'warn'

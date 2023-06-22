@@ -36,7 +36,7 @@ export async function readFile(this: any, path: any, {throwOnNotFound = true} = 
     try {
         await promises.access(path, constants.R_OK);
         const data = await promises.readFile(path);
-        return data as unknown as string;
+        return data.toString() as unknown as string;
     } catch (e) {
         const {code} = e;
         if (code === 'ENOENT') {

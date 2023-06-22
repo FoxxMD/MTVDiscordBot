@@ -14,9 +14,14 @@ export interface OperatorConfigWithFileContext extends OperatorConfig {
     fileConfig: OperatorFileConfig
 }
 
+export interface DiscordCredentials {
+    token: string
+    clientId: string
+}
+
 export interface OperatorConfig extends OperatorJsonConfig {
     credentials: {
-        discord: string
+        discord: DiscordCredentials
     }
 }
 
@@ -26,6 +31,6 @@ export interface OperatorJsonConfig {
      * */
     logging?: LoggingOptions,
     credentials?: {
-        discord: string
+        discord?: DiscordCredentials
     }
 }

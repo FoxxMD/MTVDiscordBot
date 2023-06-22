@@ -53,3 +53,5 @@ export interface LogInfo {
     labels?: string[]
     transport?: string[]
 }
+
+export const staffRoleKeywords = ['moderation', 'admin'];

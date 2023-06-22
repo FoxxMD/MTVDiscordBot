@@ -23,4 +23,6 @@ export interface LoggingOptions {
     console?: LogLevel
 
     db?: boolean
+
+    discord?: LogLevel
 }

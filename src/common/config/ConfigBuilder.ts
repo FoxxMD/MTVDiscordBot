@@ -129,7 +129,10 @@ export const parseConfigFromEnv = (): OperatorJsonConfig => {
             level: process.env.LOG_LEVEL as (LogLevel | undefined)
         },
         credentials: {
-            discord: process.env.DISCORD_TOKEN
+            discord: {
+                token: process.env.DISCORD_TOKEN,
+                clientId: process.env.CLIENT_ID
+            }
         }
     }
 }
