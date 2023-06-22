@@ -42,6 +42,9 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
                 name: 'TEST',
                 nsfw: false
         });
+
+        await user.addCreator(creator);
+
         const [video] = await Video.upsert({
             platform: 'youtube',
             platformId: '12345',

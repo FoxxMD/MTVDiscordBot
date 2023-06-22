@@ -10,11 +10,15 @@ import {
   HasManyGetAssociationsMixin,
   HasManyAddAssociationMixin,
   HasManyRemoveAssociationMixin,
-  HasManyCreateAssociationMixin
+  HasManyCreateAssociationMixin,
+    BelongsToManyAddAssociationMixin,
+    BelongsToManyCreateAssociationMixin,
+    BelongsToManyGetAssociationsMixin
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
+import {Creator} from "./creator.js";
 
-export class User extends Model<InferAttributes<User, { omit: 'submissions' }>, InferCreationAttributes<User>> {
+export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'creators' }>, InferCreationAttributes<User>> {
 
   declare id: CreationOptional<number>;
   declare name: string;
@@ -27,10 +31,16 @@ export class User extends Model<InferAttributes<User, { omit: 'submissions' }>, 
   declare removeSubmission: HasManyRemoveAssociationMixin<VideoSubmission, number>;
   declare createSubmission: HasManyCreateAssociationMixin<VideoSubmission, 'userId'>;
 
+  declare createCreator: BelongsToManyCreateAssociationMixin<Creator>;
+  declare addCreator: BelongsToManyAddAssociationMixin<Creator, 'CreatorId'>;
+  declare getCreators: BelongsToManyGetAssociationsMixin<Creator>;
+
   declare submissions?: NonAttribute<VideoSubmission[]>;
+  declare creators?: NonAttribute<Creator[]>;
 
   declare static associations: {
     submissions: Association<User, VideoSubmission>;
+    creators: Association<User, Creator>
   };
 }
 
@@ -66,6 +76,7 @@ export const associate = () => {
     foreignKey: 'userId',
     as: 'submissions'
   });
+  User.belongsToMany(Creator, {through: 'UserCreators'});
 }
 
 // module.exports = (sequelize, DataTypes) => {

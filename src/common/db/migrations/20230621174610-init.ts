@@ -96,7 +96,7 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('Videos', ['platform','platformId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Videos', ['platform', 'platformId'], {type: 'UNIQUE'});
 
         await queryInterface.createTable('Creators', {
             id: {
@@ -127,7 +127,40 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('Creators', ['platform','platformId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Creators', ['platform', 'platformId'], {type: 'UNIQUE'});
+
+        await queryInterface.createTable('UserCreators', {
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            UserId: {
+                allowNull: false,
+                onDelete: 'RESTRICT',
+                onUpdate: 'CASCADE',
+                references: {
+                    model: 'Users',
+                    key: 'id'
+                },
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            CreatorId: {
+                allowNull: false,
+                onDelete: 'RESTRICT',
+                onUpdate: 'CASCADE',
+                references: {
+                    model: 'Creators',
+                    key: 'id'
+                },
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+        });
     },
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('Users');
@@ -135,4 +168,4 @@ const migration: Migration = {
         await queryInterface.dropTable('Videos');
     }
 };
-module.exports = { up: migration.up, down: migration.down };
+module.exports = {up: migration.up, down: migration.down};

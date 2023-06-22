@@ -7,11 +7,14 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin
+  NonAttribute,
+  HasManyGetAssociationsMixin,
+  BelongsToManyGetAssociationsMixin
 } from "sequelize";
 import {Video} from "./video.js";
+import {User} from "./user.js";
 
-export class Creator extends Model<InferAttributes<Creator, { omit: 'videos' }>, InferCreationAttributes<Creator>> {
+export class Creator extends Model<InferAttributes<Creator, { omit: 'videos' | 'users' }>, InferCreationAttributes<Creator>> {
 
   declare id: CreationOptional<number>;
   declare platform: string;
@@ -23,11 +26,14 @@ export class Creator extends Model<InferAttributes<Creator, { omit: 'videos' }>,
   declare updatedAt: CreationOptional<Date>;
 
   declare getVideos: HasManyGetAssociationsMixin<Video>;
+  declare getUsers: BelongsToManyGetAssociationsMixin<User>;
 
   declare videos?: NonAttribute<Video[]>;
+  declare users?: NonAttribute<User[]>;
 
   declare static associations: {
     videos: Association<Creator, Video>;
+    users: Association<Creator, User>
   };
 }
 
@@ -62,4 +68,5 @@ export const associate = () => {
     sourceKey: 'id',
     as: 'videos'
   });
+  Creator.belongsToMany(User, {through: 'UserCreators'});
 }
