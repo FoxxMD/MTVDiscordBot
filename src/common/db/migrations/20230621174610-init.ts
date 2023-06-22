@@ -74,11 +74,8 @@ const migration: Migration = {
             platform: {
                 type: Sequelize.STRING
             },
-            creatorName: {
-                type: Sequelize.STRING
-            },
             creatorId: {
-                type: Sequelize.STRING
+                type: Sequelize.INTEGER.UNSIGNED
             },
             platformId: {
                 type: Sequelize.STRING
@@ -100,6 +97,37 @@ const migration: Migration = {
         });
 
         await queryInterface.addIndex('Videos', ['platform','platformId'], {type: 'UNIQUE'});
+
+        await queryInterface.createTable('Creators', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            platform: {
+                type: Sequelize.STRING
+            },
+            name: {
+                type: Sequelize.STRING
+            },
+            platformId: {
+                type: Sequelize.STRING
+            },
+            nsfw: {
+                type: Sequelize.BOOLEAN
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            }
+        });
+
+        await queryInterface.addIndex('Creators', ['platform','platformId'], {type: 'UNIQUE'});
     },
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('Users');

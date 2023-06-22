@@ -7,16 +7,17 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin
+  NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin, ForeignKey
 } from "sequelize";
 import {VideoSubmission} from "./videosubmission.js";
+import {Creator} from "./creator.js";
+import {User} from "./user.js";
 
-export class Video extends Model<InferAttributes<Video, { omit: 'submissions' }>, InferCreationAttributes<Video>> {
+export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>, InferCreationAttributes<Video>> {
 
   declare id: CreationOptional<number>;
   declare platform: string;
-  declare creatorName: CreationOptional<string>;
-  declare creatorId: CreationOptional<string>;
+  declare creatorId: ForeignKey<Creator['id']>;
   declare platformId: string;
   declare length: CreationOptional<number>;
   declare nsfw: boolean;
@@ -29,6 +30,7 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions' }>
   declare removeSubmission: HasManyRemoveAssociationMixin<VideoSubmission, number>;
 
   declare submissions?: NonAttribute<VideoSubmission[]>;
+  declare creator?: NonAttribute<Creator>
 
   declare static associations: {
     submissions: Association<Video, VideoSubmission>;
@@ -43,8 +45,7 @@ export const init = (sequelize: Sequelize) => {
       primaryKey: true
     },
     platform: DataTypes.STRING,
-    creatorName: DataTypes.STRING,
-    creatorId: DataTypes.STRING,
+    creatorId: DataTypes.INTEGER,
     platformId: DataTypes.STRING,
     length: DataTypes.INTEGER.UNSIGNED,
     nsfw: DataTypes.BOOLEAN,
@@ -68,6 +69,7 @@ export const associate = () => {
     sourceKey: 'id',
     as: 'submissions'
   });
+  Video.belongsTo(Creator, {targetKey: 'id'});
 }
 
 // module.exports = (sequelize: Sequelize, _: any) => {
