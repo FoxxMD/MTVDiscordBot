@@ -62,6 +62,8 @@ const migration: Migration = {
             }
         });
 
+        await queryInterface.addIndex('VideoSubmissions', ['videoId', 'guildId', 'messageId', 'userId'], {type: 'UNIQUE'});
+
         await queryInterface.createTable('Videos', {
             id: {
                 allowNull: false,

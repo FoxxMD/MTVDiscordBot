@@ -13,8 +13,8 @@ import {User} from "./user.js";
 export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
 
   declare id: CreationOptional<number>;
-  declare messageId: number;
-  declare guildId: number;
+  declare messageId: string;
+  declare guildId: string;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
   declare upvotes: CreationOptional<number>;
@@ -50,6 +50,10 @@ export const init = (sequelize: Sequelize) => {
       {
         unique: false,
         fields: ['videoId']
+      },
+      {
+        unique: true,
+        fields: ['videoId', 'guildId', 'messageId', 'userId']
       }
     ]
   });

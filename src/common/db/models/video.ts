@@ -18,7 +18,7 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions' }>
   declare creatorName: CreationOptional<string>;
   declare creatorId: CreationOptional<string>;
   declare platformId: string;
-  declare length: number;
+  declare length: CreationOptional<number>;
   declare nsfw: boolean;
 
   declare createdAt: CreationOptional<Date>;

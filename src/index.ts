@@ -9,6 +9,9 @@ import {getLogger} from "./common/logging.js";
 import {parseConfigFromSources} from "./common/config/ConfigBuilder.js";
 import {initDB} from "./common/db/index.js";
 import {dataDir} from "./common/index.js";
+import {User} from "./common/db/models/user.js";
+import {VideoSubmission} from "./common/db/models/videosubmission.js";
+import {Video} from "./common/db/models/video.js";
 
 dayjs.extend(utc)
 dayjs.extend(isBetween);
@@ -27,6 +30,27 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
         logger.info(`Discord token: ${config.credentials.discord}`);
 
         const db = await initDB(config);
+
+        const [user] = await User.upsert({
+            name: 'foxxmd#0'
+        });
+
+        const subs = await user.getSubmissions();
+        const [video] = await Video.upsert({
+            platform: 'youtube',
+                platformId: '12345',
+                length: 1234,
+                nsfw: false
+        });
+        const [submission] = await VideoSubmission.upsert({
+            messageId: '1234',
+            guildId: '123',
+            userId: user.id,
+            videoId: video.id,
+        });
+
+        const hydratedUser = await User.findOne({where: {id: 1}, include: { all: true, nested: true }});
+        const f = 1;
     } catch (e) {
         logger.error('Exited with uncaught error');
         logger.error(e);
