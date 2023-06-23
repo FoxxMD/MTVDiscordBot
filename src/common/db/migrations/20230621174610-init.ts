@@ -3,12 +3,45 @@ import {IndexType} from "sequelize/types/dialects/abstract/query-interface.js";
 
 const migration: Migration = {
     async up(queryInterface, Sequelize) {
+
+        await queryInterface.createTable('Guilds', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER
+            },
+            snowflake: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true
+            },
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: false
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            }
+        });
+
+        await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
+
         await queryInterface.createTable('Users', {
             id: {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
                 type: Sequelize.INTEGER
+            },
+            guildId: {
+                type: Sequelize.INTEGER.UNSIGNED
             },
             name: {
                 type: Sequelize.STRING,
@@ -25,7 +58,7 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('Users', ['name'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Users', ['name', 'guildId'], {type: 'UNIQUE'});
 
         await queryInterface.createTable('VideoSubmissions', {
             id: {
@@ -41,10 +74,13 @@ const migration: Migration = {
                 type: Sequelize.INTEGER
             },
             guildId: {
-                type: Sequelize.STRING
+                type: Sequelize.INTEGER.UNSIGNED
             },
             userId: {
                 type: Sequelize.INTEGER.UNSIGNED
+            },
+            url: {
+                type: Sequelize.STRING
             },
             upvotes: {
                 type: Sequelize.INTEGER.UNSIGNED
@@ -63,6 +99,8 @@ const migration: Migration = {
         });
 
         await queryInterface.addIndex('VideoSubmissions', ['videoId', 'guildId', 'messageId', 'userId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('VideoSubmissions', ['url']);
+        await queryInterface.addIndex('VideoSubmissions', ['videoId']);
 
         await queryInterface.createTable('Videos', {
             id: {
@@ -71,13 +109,16 @@ const migration: Migration = {
                 primaryKey: true,
                 type: Sequelize.INTEGER.UNSIGNED
             },
-            platform: {
-                type: Sequelize.STRING
-            },
             creatorId: {
                 type: Sequelize.INTEGER.UNSIGNED
             },
+            platform: {
+                type: Sequelize.STRING
+            },
             platformId: {
+                type: Sequelize.STRING
+            },
+            url: {
                 type: Sequelize.STRING
             },
             length: {
@@ -97,6 +138,7 @@ const migration: Migration = {
         });
 
         await queryInterface.addIndex('Videos', ['platform', 'platformId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Videos', ['url']);
 
         await queryInterface.createTable('Creators', {
             id: {
@@ -126,6 +168,45 @@ const migration: Migration = {
                 type: Sequelize.DATE
             }
         });
+
+        await queryInterface.createTable('ShowcasePosts', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            messageId: {
+                type: Sequelize.STRING
+            },
+            videoId: {
+                type: Sequelize.INTEGER
+            },
+            guildId: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            userId: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            submissionId: {
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            url: {
+                type: Sequelize.STRING
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            }
+        });
+
+        await queryInterface.addIndex('ShowcasePosts', ['videoId', 'guildId', 'messageId', 'userId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('ShowcasePosts', ['url']);
+        await queryInterface.addIndex('ShowcasePosts', ['videoId']);
 
         await queryInterface.addIndex('Creators', ['platform', 'platformId'], {type: 'UNIQUE'});
 
@@ -243,9 +324,11 @@ const migration: Migration = {
         await queryInterface.addIndex('UserTrustLevels', ['userId'], {type: 'UNIQUE'});
     },
     async down(queryInterface, Sequelize) {
+        await queryInterface.dropTable('Guilds');
         await queryInterface.dropTable('Users');
         await queryInterface.dropTable('VideoSubmissions');
         await queryInterface.dropTable('Videos');
+        await queryInterface.dropTable('ShowcasePosts');
         await queryInterface.dropTable('Creators');
         await queryInterface.dropTable('UserCreators');
         await queryInterface.dropTable('SubmissionTrustLevels');

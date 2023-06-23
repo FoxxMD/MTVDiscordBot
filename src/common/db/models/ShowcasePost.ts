@@ -5,22 +5,21 @@ import {
   CreationOptional,
   DataTypes,
   Sequelize,
-  ForeignKey, NonAttribute, BelongsToGetAssociationMixin, HasOneGetAssociationMixin
+  ForeignKey, NonAttribute, BelongsToGetAssociationMixin
 } from 'sequelize';
 import {Video} from "./video.js";
 import {User} from "./user.js";
-import {ShowcasePost} from "./ShowcasePost.js";
+import {VideoSubmission} from "./videosubmission.js";
 import {Guild} from "./Guild.js";
 
-export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
+export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCreationAttributes<ShowcasePost>> {
 
   declare id: CreationOptional<number>;
   declare messageId: string;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
-  declare upvotes: CreationOptional<number>;
-  declare downvotes: CreationOptional<number>;
+  declare submissionId: ForeignKey<VideoSubmission['id']>;
   declare url: CreationOptional<string>;
 
   declare createdAt: CreationOptional<Date>;
@@ -29,17 +28,17 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
   declare getVideo: BelongsToGetAssociationMixin<Video>;
   declare getUser: BelongsToGetAssociationMixin<User>;
   declare getGuild: BelongsToGetAssociationMixin<Guild>;
-  declare getShowcase: HasOneGetAssociationMixin<Video>;
+  declare getSubmission: BelongsToGetAssociationMixin<VideoSubmission>;
 
-  declare guild: NonAttribute<Guild>
+  declare guild: NonAttribute<Guild>;
   declare user: NonAttribute<User>;
   declare video: NonAttribute<Video>;
-  declare showcase?: NonAttribute<ShowcasePost>
+  declare submission?: NonAttribute<VideoSubmission>
 }
 
 
 export const init = (sequelize: Sequelize) => {
-  VideoSubmission.init({
+  ShowcasePost.init({
     id: {
       type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
@@ -48,15 +47,14 @@ export const init = (sequelize: Sequelize) => {
     messageId: DataTypes.STRING,
     guildId: DataTypes.STRING,
     videoId: DataTypes.INTEGER,
+    submissionId: DataTypes.INTEGER,
     userId: DataTypes.INTEGER,
     url: DataTypes.STRING,
-    upvotes: DataTypes.INTEGER,
-    downvotes: DataTypes.INTEGER,
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   }, {
     sequelize,
-    modelName: 'VideoSubmission',
+    modelName: 'ShowcasePost',
     indexes: [
       {
         unique: false,
@@ -75,8 +73,8 @@ export const init = (sequelize: Sequelize) => {
 }
 
 export const associate = () => {
-  VideoSubmission.belongsTo(Video, {targetKey: 'id', as: 'guild'});
-  VideoSubmission.belongsTo(User, {targetKey: 'id', as: 'user'});
-  VideoSubmission.belongsTo(Guild, {targetKey: 'id', as: 'video'});
-  VideoSubmission.hasOne(ShowcasePost, {foreignKey: 'submissionId', as: 'showcase'});
+  ShowcasePost.belongsTo(Video, {targetKey: 'id', as: 'video'});
+  ShowcasePost.belongsTo(User, {targetKey: 'id', as: 'user'});
+  ShowcasePost.belongsTo(Guild, {targetKey: 'id', as: 'guild'});
+  ShowcasePost.belongsTo(VideoSubmission, {targetKey: 'id', as: 'submission'});
 }

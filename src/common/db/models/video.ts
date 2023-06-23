@@ -12,6 +12,7 @@ import {
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
 import {User} from "./user.js";
+import {ShowcasePost} from "./ShowcasePost.js";
 
 export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>, InferCreationAttributes<Video>> {
 
@@ -19,6 +20,7 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
   declare platform: string;
   declare creatorId: ForeignKey<Creator['id']>;
   declare platformId: string;
+  declare url: string;
   declare length: CreationOptional<number>;
   declare nsfw: boolean;
 
@@ -28,12 +30,15 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
   declare getSubmissions: HasManyGetAssociationsMixin<VideoSubmission>;
   declare addSubmission: HasManyAddAssociationMixin<VideoSubmission, number>;
   declare removeSubmission: HasManyRemoveAssociationMixin<VideoSubmission, number>;
+  declare getShowcases: HasManyGetAssociationsMixin<ShowcasePost>;
 
   declare submissions?: NonAttribute<VideoSubmission[]>;
   declare creator?: NonAttribute<Creator>
+  declare showcases?: NonAttribute<ShowcasePost>
 
   declare static associations: {
     submissions: Association<Video, VideoSubmission>;
+    showcases: Association<Video, ShowcasePost>;
   };
 }
 
@@ -47,6 +52,7 @@ export const init = (sequelize: Sequelize) => {
     platform: DataTypes.STRING,
     creatorId: DataTypes.INTEGER,
     platformId: DataTypes.STRING,
+    url: DataTypes.STRING,
     length: DataTypes.INTEGER.UNSIGNED,
     nsfw: DataTypes.BOOLEAN,
     createdAt: DataTypes.DATE,
@@ -58,6 +64,10 @@ export const init = (sequelize: Sequelize) => {
       {
         unique: true,
         fields: ['platform','platformId']
+      },
+      {
+        unique: false,
+        fields: ['url']
       }
     ]
   });
@@ -69,46 +79,10 @@ export const associate = () => {
     sourceKey: 'id',
     as: 'submissions'
   });
-  Video.belongsTo(Creator, {targetKey: 'id'});
+  Video.hasMany(ShowcasePost, {
+    foreignKey: 'videoId',
+    sourceKey: 'id',
+    as: 'showcases'
+  });
+  Video.belongsTo(Creator, {targetKey: 'id', as: 'creator'});
 }
-
-// module.exports = (sequelize: Sequelize, _: any) => {
-//   class Video extends Model<InferAttributes<Video>, InferCreationAttributes<Video>> {
-//
-//     declare id: CreationOptional<number>;
-//     declare platform: string;
-//     declare creatorName: CreationOptional<string>;
-//     declare creatorId: CreationOptional<string>;
-//     declare platformId: string;
-//     declare length: number;
-//     declare nsfw: boolean;
-//
-//     declare createdAt: CreationOptional<Date>;
-//     declare updatedAt: CreationOptional<Date>;
-//
-//     declare static associations: {
-//       projects: Association<Video, VideoSubmission>;
-//     };
-//
-//     /**
-//      * Helper method for defining associations.
-//      * This method is not a part of Sequelize lifecycle.
-//      * The `models/index` file will call this method automatically.
-//      */
-//     static associate(models) {
-//
-//     }
-//   }
-//   Video.init({
-//     platform: DataTypes.STRING,
-//     creatorName: DataTypes.STRING,
-//     creatorId: DataTypes.STRING,
-//     platformId: DataTypes.STRING,
-//     length: DataTypes.INTEGER.UNSIGNED,
-//     nsfw: DataTypes.BOOLEAN
-//   }, {
-//     sequelize,
-//     modelName: 'Video',
-//   });
-//   return Video;
-// };

@@ -16,16 +16,18 @@ import {
   BelongsToManyGetAssociationsMixin,
   HasOneCreateAssociationMixin,
   HasOneGetAssociationMixin,
-  HasOneSetAssociationMixin
+  HasOneSetAssociationMixin, ForeignKey
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
 import {UserTrustLevel} from "./UserTrustLevel.js";
+import {Guild} from "./Guild.js";
 
 export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'creators' | 'trustLevel' }>, InferCreationAttributes<User, { omit: 'submissions' | 'creators' | 'trustLevel' }>> {
 
   declare id: CreationOptional<number>;
   declare name: string;
+  declare guildId: ForeignKey<Guild['id']>;
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -45,7 +47,8 @@ export class User extends Model<InferAttributes<User, { omit: 'submissions' | 'c
 
   declare submissions?: NonAttribute<VideoSubmission[]>;
   declare creators?: NonAttribute<Creator[]>;
-  declare trustLevel?: NonAttribute<UserTrustLevel>;
+  declare trustLevel: NonAttribute<UserTrustLevel>;
+  declare guild: NonAttribute<Guild>
 
   declare static associations: {
     submissions: Association<User, VideoSubmission>;
@@ -66,6 +69,7 @@ export const init = (sequelize: Sequelize) => {
       allowNull: false,
       unique: true
     },
+    guildId: DataTypes.INTEGER,
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   }, {
@@ -74,7 +78,7 @@ export const init = (sequelize: Sequelize) => {
     indexes: [
       {
         unique: true,
-        fields: ['name']
+        fields: ['name', 'guildId']
       }
     ]
   });
@@ -88,48 +92,5 @@ export const associate = () => {
   });
   User.belongsToMany(Creator, {through: 'UserCreators'});
   User.hasOne(UserTrustLevel, {foreignKey: 'userId', as: 'trustLevel'});
+  User.belongsTo(Guild, {as: 'guild'});
 }
-
-// module.exports = (sequelize, DataTypes) => {
-//   class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
-//
-//     declare id: CreationOptional<number>;
-//     declare name: string;
-//
-//     declare createdAt: CreationOptional<Date>;
-//     declare updatedAt: CreationOptional<Date>;
-//
-//     /**
-//      * Helper method for defining associations.
-//      * This method is not a part of Sequelize lifecycle.
-//      * The `models/index` file will call this method automatically.
-//      */
-//     static associate(models) {
-//       // define association here
-//     }
-//   }
-//   User.init({
-//     id: {
-//       type: DataTypes.INTEGER.UNSIGNED,
-//       autoIncrement: true,
-//       primaryKey: true
-//     },
-//     name: {
-//       type: DataTypes.STRING,
-//       allowNull: false,
-//       unique: true
-//     },
-//     createdAt: DataTypes.DATE,
-//     updatedAt: DataTypes.DATE,
-//   }, {
-//     sequelize,
-//     modelName: 'User',
-//     indexes: [
-//       {
-//         unique: true,
-//         fields: ['name']
-//       }
-//     ]
-//   });
-//   return User;
-// };

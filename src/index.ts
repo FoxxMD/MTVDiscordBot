@@ -13,6 +13,7 @@ import {Events, GatewayIntentBits} from "discord.js";
 import {BotClient} from "./BotClient.js";
 import {Bot} from "./bot/Bot.js";
 import {mergeArr} from "./utils/index.js";
+import {sandbox} from "./common/db/test.js";
 
 dayjs.extend(utc)
 dayjs.extend(isBetween);

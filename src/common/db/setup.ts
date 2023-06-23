@@ -5,6 +5,8 @@ import * as videoSubmission from './models/videosubmission.js'
 import * as creator from './models/creator.js';
 import * as subLevel from './models/SubmissionTrustLevel.js';
 import * as userLevel from './models/UserTrustLevel.js';
+import * as guild from './models/Guild.js';
+import * as showcase from './models/ShowcasePost.js';
 
 export const setupMappings = (db: Sequelize) => {
     user.init(db);
@@ -13,6 +15,8 @@ export const setupMappings = (db: Sequelize) => {
     creator.init(db);
     subLevel.init(db);
     userLevel.init(db);
+    guild.init(db);
+    showcase.init(db);
 
     user.associate();
     video.associate();
@@ -20,4 +24,5 @@ export const setupMappings = (db: Sequelize) => {
     creator.associate();
     subLevel.associate();
     userLevel.associate();
+    showcase.associate();
 }
