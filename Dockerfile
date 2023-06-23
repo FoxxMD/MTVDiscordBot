@@ -9,6 +9,7 @@ RUN \
     git \
     nodejs \
     npm \
+    yarn \
     openssh && \
   echo "**** cleanup ****" && \
   rm -rf \

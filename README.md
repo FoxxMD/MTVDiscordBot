@@ -25,6 +25,9 @@ npm start
 git clone https://github.com/FoxxMD/MTVDiscordBot.git .
 cd MTVDiscordBot
 ```
+
+Or [`foxxmd/mtv-discord-bot:latest`](https://hub.docker.com/r/foxxmd/mtv-discord-bot)
+
 If using a [config file](#config-file) modify the `volumes` property in `docker-compose.yml` to point to your config folder.
 
 ```shell
