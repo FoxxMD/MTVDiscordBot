@@ -9,3 +9,11 @@ export const mergeArr = (objValue: [], srcValue: []): (any[] | undefined) => {
         return objValue.concat(srcValue);
     }
 }
+
+export const valToString = (val: any): string => {
+    const t = typeof val;
+    if(t === 'boolean') {
+        return val === true ? '1' : '0';
+    }
+    return val.toString();
+}

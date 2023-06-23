@@ -11,10 +11,20 @@ import {ShowcasePost} from "./models/ShowcasePost.js";
 export const sandbox = async (db: Sequelize) => {
 
     try {
-        const [guild] = await Guild.upsert({
-            name: 'TEST',
-            snowflake: '1234'
-        });
+        const guilds = await Guild.findAll();
+        let guild: Guild;
+        if (guilds.length > 0) {
+            guild = guilds[0];
+            const setted = await guild.upsertSetting('test', 'anothertest');
+        } else {
+            guild = await Guild.create({
+                name: 'TEST',
+                snowflake: '1234'
+            });
+            const created = await guild.upsertSetting('test', 1234);
+        }
+
+        let updatedGuild = await Guild.findOne({where: {id: guild.id}, include: {all: true, nested: true}});
 
         let user = await User.findOne({where: {id: 1}, include: {all: true, nested: true}});
 

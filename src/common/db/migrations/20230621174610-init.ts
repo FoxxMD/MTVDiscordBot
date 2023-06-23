@@ -31,7 +31,41 @@ const migration: Migration = {
             }
         });
 
+        await queryInterface.createTable('GuildSettings', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            guildId: {
+                type: Sequelize.INTEGER.UNSIGNED,
+                allowNull: false,
+            },
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            type: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            value: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE,
+            }
+        });
+
         await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Guilds', ['snowflake', 'name'], {type: 'UNIQUE'});
 
         await queryInterface.createTable('Users', {
             id: {
