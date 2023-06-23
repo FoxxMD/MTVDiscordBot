@@ -57,8 +57,9 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
 
         try {
             await command.execute(interaction, db, logger);
+            logger.debug(`Executed command ${interaction.commandName} for ${interaction.user.tag}`);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({
                     content: 'There was an error while executing this command!',
@@ -93,7 +94,6 @@ export const registerGuildCommands = async (credentials: DiscordCredentials, gui
 
         logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
     } catch (error) {
-        // And of course, make sure you catch and log any errors!
         throw new ErrorWithCause(`Failed to register slash commands for guild ${guildId}`, {cause: error});
     }
 }
