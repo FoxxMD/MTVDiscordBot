@@ -152,6 +152,9 @@ const migration: Migration = {
             platformId: {
                 type: Sequelize.STRING
             },
+            title: {
+                type: Sequelize.STRING
+            },
             url: {
                 type: Sequelize.STRING
             },

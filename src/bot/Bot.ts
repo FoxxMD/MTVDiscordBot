@@ -10,9 +10,9 @@ import {getOrInsertGuild} from "./functions/repository.js";
 
 export class Bot {
     protected client: BotClient;
-    protected db: Sequelize;
-    protected logger: Logger;
-    protected config: OperatorConfig;
+    public db: Sequelize;
+    public logger: Logger;
+    public config: OperatorConfig;
 
     constructor(client: BotClient, db: Sequelize, logger: Logger, config: OperatorConfig) {
         this.client = client;
@@ -24,7 +24,7 @@ export class Bot {
     async init(logger: Logger) {
 
         try {
-            const slashData = await initCommands(this.client, this.config.credentials.discord, this.db, this.logger);
+            const slashData = await initCommands(this.client, this.config.credentials.discord, this);
 
             const cr = new Promise((resolve, reject) => {
                 this.client.once(Events.ClientReady, (msg) => {

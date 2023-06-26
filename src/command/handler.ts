@@ -7,10 +7,11 @@ import {DiscordCredentials} from "../common/infrastructure/OperatorConfig.js";
 import {ErrorWithCause} from "pony-cause";
 import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../utils/index.js";
+import {Bot} from "../bot/Bot.js";
 
-export const initCommands = async (client: BotClient, credentials: DiscordCredentials, db: Sequelize, parentLogger: Logger) => {
+export const initCommands = async (client: BotClient, credentials: DiscordCredentials, bot: Bot) => {
 
-    const logger = parentLogger.child({labels: ['Commands']}, mergeArr);
+    const logger = bot.logger.child({labels: ['Commands']}, mergeArr);
 
     const slashCommandData = [];
 
@@ -56,7 +57,7 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
         }
 
         try {
-            await command.execute(interaction, db, logger);
+            await command.execute(interaction, logger, bot);
             logger.debug(`Executed command ${interaction.commandName} for ${interaction.user.tag}`);
         } catch (error) {
             logger.error(error);

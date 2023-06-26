@@ -19,10 +19,17 @@ export interface DiscordCredentials {
     clientId: string
 }
 
+export interface Credentials {
+        youtube?: string
+        discord?: DiscordCredentials
+}
+
+export interface StrongCredentials extends Credentials {
+    discord: DiscordCredentials
+}
+
 export interface OperatorConfig extends OperatorJsonConfig {
-    credentials: {
-        discord: DiscordCredentials
-    }
+    credentials: StrongCredentials
 }
 
 export interface OperatorJsonConfig {
@@ -30,7 +37,5 @@ export interface OperatorJsonConfig {
      * Settings to configure global logging defaults
      * */
     logging?: LoggingOptions,
-    credentials?: {
-        discord?: DiscordCredentials
-    }
+    credentials?: Credentials
 }

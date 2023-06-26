@@ -20,6 +20,7 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
   declare platform: string;
   declare creatorId: ForeignKey<Creator['id']>;
   declare platformId: string;
+  declare title: string;
   declare url: string;
   declare length: CreationOptional<number>;
   declare nsfw: boolean;
@@ -52,6 +53,7 @@ export const init = (sequelize: Sequelize) => {
     platform: DataTypes.STRING,
     creatorId: DataTypes.INTEGER,
     platformId: DataTypes.STRING,
+    title: DataTypes.STRING,
     url: DataTypes.STRING,
     length: DataTypes.INTEGER.UNSIGNED,
     nsfw: DataTypes.BOOLEAN,

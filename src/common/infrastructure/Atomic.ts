@@ -55,3 +55,27 @@ export interface LogInfo {
 }
 
 export const staffRoleKeywords = ['moderation', 'admin'];
+
+export type Platform = 'youtube' | 'vimeo' | 'unknown';
+
+export interface VideoDetails {
+    duration: number,
+    id: string
+    platform: Platform
+    url: string
+    nsfw?: boolean
+    title: string
+    authorName: string
+    authorId: string
+}
+
+export interface NamedGroup {
+    [name: string]: any
+}
+
+export interface RegExResult {
+    match: string,
+    groups: string[],
+    index: number
+    named: NamedGroup
+}
