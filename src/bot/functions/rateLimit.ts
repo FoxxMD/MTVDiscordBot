@@ -1,6 +1,5 @@
 import {User} from "../../common/db/models/user.js";
-import {Sequelize} from "sequelize";
-import {CacheType, ChatInputCommandInteraction} from "discord.js";
+import {CacheType, ChatInputCommandInteraction, time} from "discord.js";
 import {getUserLastSubmittedVideo} from "./repository.js";
 import dayjs from "dayjs";
 
@@ -12,10 +11,11 @@ export const rateLimitUser = async (interaction: ChatInputCommandInteraction<Cac
             const level = await user.getSubmissionLevel();
             const parts: string[] = [
                 `Your current Trust Level (${level.id} - ${level.name}) allows submitting a video every ${dayjs.duration({seconds: level.timePeriod}).asHours()} hours.`,
-                `You last submitted a video on ${dayjs(lastSubmitted.createdAt).format('YYYY-MM-DD HH:mm:ssZ')} and have ${dayjs.duration({seconds: remaining}).humanize()} remaining before you can submit another.`
+                `You last submitted a video on ${time(lastSubmitted.createdAt)} and can next submit a video ${time(dayjs().add(remaining, 'seconds').toDate(), 'R')}.`
             ];
             await interaction.reply({
-                content: parts.join(' ')
+                content: parts.join(' '),
+                ephemeral: true
             });
         }
     }

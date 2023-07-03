@@ -45,7 +45,7 @@ export const init = (sequelize: Sequelize) => {
             autoIncrement: true,
             primaryKey: true
         },
-        guildId: DataTypes.INTEGER,
+        guildId: DataTypes.STRING,
         name: DataTypes.STRING,
         type: DataTypes.STRING,
         value: DataTypes.STRING,

@@ -94,3 +94,19 @@ export const timestampToDuration = (str: string): Duration => {
 
     throw new SimpleError(`Timestamp '${str}' did not match format HH:MM:SS`);
 }
+
+export const durationToTimestamp = (dur: Duration): string => {
+    const totalSeconds = dur.asSeconds();
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds - (hours * 3600)) / 60);
+    const seconds = totalSeconds - (hours * 3600) - (minutes * 60);
+
+    const parts: string[] = [];
+    if (hours !== 0) {
+        parts.push(hours.toString().padStart(2, "0"));
+    }
+    parts.push(minutes.toString().padStart(2, "0"));
+    parts.push(seconds.toString().padStart(2, "0"));
+    return parts.join(':');
+}

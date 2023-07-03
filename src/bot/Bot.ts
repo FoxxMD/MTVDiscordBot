@@ -4,7 +4,7 @@ import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../utils/index.js";
 import {OperatorConfig} from "../common/infrastructure/OperatorConfig.js";
 import {initCommands, registerGuildCommands} from "../command/handler.js";
-import {Events} from "discord.js";
+import {Events, TextChannel} from "discord.js";
 import {logLevels} from "../common/logging.js";
 import {getOrInsertGuild} from "./functions/repository.js";
 

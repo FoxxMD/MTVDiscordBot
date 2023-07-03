@@ -56,17 +56,22 @@ export interface LogInfo {
 
 export const staffRoleKeywords = ['moderation', 'admin'];
 
-export type Platform = 'youtube' | 'vimeo' | 'unknown';
+export type Platform = 'youtube' | 'vimeo' | string;
 
 export interface VideoDetails {
-    duration: number,
+    duration?: number,
     id: string
     platform: Platform
     url: string
     nsfw?: boolean
+    title?: string
+    authorName?: string
+    authorId?: string
+}
+
+export interface MinimalVideoDetails extends VideoDetails {
+    duration: number
     title: string
-    authorName: string
-    authorId: string
 }
 
 export interface NamedGroup {

@@ -1,10 +1,14 @@
 import {GuildMember, APIInteractionGuildMember, Guild as DiscordGuild} from "discord.js";
-import {Sequelize} from "sequelize";
+import {Sequelize, Op} from "sequelize";
 import {User} from "../../common/db/models/user.js";
 import {Guild} from "../../common/db/models/Guild.js";
 import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
+import {Video} from "../../common/db/models/video.js";
+import {MinimalVideoDetails} from "../../common/infrastructure/Atomic.js";
+import {SimpleError} from "../../utils/Errors.js";
+import {Creator} from "../../common/db/models/creator.js";
 
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, db: Sequelize) => {
     // TODO reduce eager loading
@@ -27,11 +31,11 @@ export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildM
 export const getOrInsertGuild = async (dguild: DiscordGuild, db: Sequelize, logger?: Logger) => {
 
     try {
-        let guild = await Guild.findOne({where: {snowflake: dguild.id}, include: 'settings'});
+        let guild = await Guild.findOne({where: {id: dguild.id}, include: 'settings'});
         if (guild === null) {
             guild = await Guild.create({
                 name: dguild.name,
-                snowflake: dguild.id
+                id: dguild.id
             });
             const defaultChannel = dguild.channels.cache.find(x => x.name.toLowerCase().includes('firehose'));
             if (defaultChannel !== undefined) {
@@ -52,9 +56,76 @@ export const getOrInsertGuild = async (dguild: DiscordGuild, db: Sequelize, logg
 }
 
 export const getUserLastSubmittedVideo = async (user: User) => {
-    const res = await VideoSubmission.findAll({where: {userId: user.id}, order: ['id', 'DESC'], limit: 3});
-    if(res.length > 0) {
+    const res = await VideoSubmission.findAll({where: {userId: user.id}, order: [['id', 'DESC']], limit: 3});
+    if (res.length > 0) {
         return res[0];
     }
     return undefined;
+}
+
+export const getVideoByVideoId = async (id: string, platform: string) => {
+    const vid = await Video.findOne({where: {platformId: id, platform}, include: 'creator'});
+    if(vid === null) {
+        return undefined;
+    }
+    return vid;
+}
+
+export const getOrInsertVideo = async (details: MinimalVideoDetails) => {
+    const existing = await getVideoByVideoId(details.id, details.platform);
+    if (existing !== undefined) {
+        return existing;
+    }
+    const vid = await Video.create({
+        platform: details.platform,
+        platformId: details.id,
+        title: details.title,
+        url: details.url,
+        length: details.duration,
+        nsfw: details.nsfw ?? false
+    });
+    if (details.authorName !== undefined || details.authorId !== undefined) {
+        const creator = await upsertVideoCreator(details.platform, details.authorId, details.authorName);
+        await vid.setCreator(creator);
+    }
+    return vid;
+}
+
+export const upsertVideoCreator = async (platform: string, platformId?: string, name?: string) => {
+    if (platformId === undefined && name === undefined) {
+        throw new SimpleError('Must provide either platformId or name');
+    }
+    const criteria = [];
+    if (platformId !== undefined) {
+        criteria.push({platformId});
+    }
+    if (name !== undefined) {
+        criteria.push({name})
+    }
+    const creators = await Creator.findAll({
+        where: {
+            platform,
+            [Op.or]: criteria
+        }
+    });
+    let creatorEntity: Creator;
+    // naive
+    if (creators.length === 1) {
+        creatorEntity = creators[0];
+        if (creatorEntity.name !== name) {
+            creatorEntity.name = name;
+            await creatorEntity.save();
+        }
+        return creatorEntity;
+    } else if (creators.length > 1) {
+        return creators[0];
+    }
+
+    creatorEntity = await Creator.create({
+        platform,
+        platformId,
+        name,
+        nsfw: false
+    });
+    return creatorEntity;
 }

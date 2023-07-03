@@ -7,12 +7,18 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin, ForeignKey
+  NonAttribute,
+  HasManyGetAssociationsMixin,
+  HasManyAddAssociationMixin,
+  HasManyRemoveAssociationMixin,
+  ForeignKey,
+  BelongsToSetAssociationMixin, BelongsToGetAssociationMixin
 } from "sequelize";
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
 import {User} from "./user.js";
 import {ShowcasePost} from "./ShowcasePost.js";
+import dayjs from "dayjs";
 
 export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>, InferCreationAttributes<Video>> {
 
@@ -33,6 +39,9 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
   declare removeSubmission: HasManyRemoveAssociationMixin<VideoSubmission, number>;
   declare getShowcases: HasManyGetAssociationsMixin<ShowcasePost>;
 
+  declare setCreator: BelongsToSetAssociationMixin<Creator, number>
+  declare getCreator: BelongsToGetAssociationMixin<Creator>
+
   declare submissions?: NonAttribute<VideoSubmission[]>;
   declare creator?: NonAttribute<Creator>
   declare showcases?: NonAttribute<ShowcasePost>
@@ -41,6 +50,23 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
     submissions: Association<Video, VideoSubmission>;
     showcases: Association<Video, ShowcasePost>;
   };
+
+  getLastSubmission = async () => {
+    const subs = await this.getSubmissions();
+    if (subs.length > 0) {
+      subs.sort((a, b) => b.id - a.id);
+      return subs[0];
+    }
+    return undefined;
+  }
+
+  validForSubmission = async () => {
+    const lastSubmission = await this.getLastSubmission();
+    if (lastSubmission === undefined) {
+      return true;
+    }
+    return dayjs(lastSubmission.createdAt).isBefore(dayjs().subtract(dayjs.duration('30 days')));
+  }
 }
 
 export const init = (sequelize: Sequelize) => {

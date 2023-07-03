@@ -19,7 +19,7 @@ export const sandbox = async (db: Sequelize) => {
         } else {
             guild = await Guild.create({
                 name: 'TEST',
-                snowflake: '1234'
+                id: '1234'
             });
             const created = await guild.upsertSetting('test', 1234);
         }

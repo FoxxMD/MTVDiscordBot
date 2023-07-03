@@ -5,14 +5,18 @@ import {
     SlashCommandBuilder,
     TextInputBuilder,
     TextInputStyle,
-    ActionRowBuilder
+    ActionRowBuilder,
+    time
 } from "discord.js";
-import {getOrInsertUser} from "../../../bot/functions/repository.js";
+import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
 import {VideoManager} from "../../../common/video/VideoManager.js";
 import {timestampToDuration} from "../../../utils/StringUtils.js";
 import {rateLimitUser} from "../../../bot/functions/rateLimit.js";
+import dayjs from "dayjs";
+import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
+import {MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,7 +29,7 @@ module.exports = {
 
         const user = await getOrInsertUser(interaction.member, bot.db);
 
-        await rateLimitUser(interaction, user);
+        //await rateLimitUser(interaction, user);
         if(interaction.replied) {
             return;
         }
@@ -36,13 +40,23 @@ module.exports = {
 
         const deets = await manager.getVideoDetails(url);
 
-        // TODO check for existing video submission
+       const existingVideo = await getVideoByVideoId(deets.id, deets.platform);
+        if (existingVideo !== undefined) {
+            const isValidToSubmit = await existingVideo.validForSubmission();
+            if (!isValidToSubmit) {
+                const lastSubmission = await existingVideo.getLastSubmission();
+                return await interaction.reply({
+                    content: [
+                        `This video was last submitted ${time(lastSubmission.createdAt)} (${time(lastSubmission.createdAt, 'R')}) here ${lastSubmission.getDiscordMessageLink()}`,
+                        `At least one month must pass between submissions of the same video.`
+                    ].join(' '),
+                    ephemeral: true
+                });
+            }
+        }
 
         if (deets.duration !== undefined && deets.title !== undefined) {
-            // TODO store video to db
-            // TODO determine channel to post to
-            // TODO post to channel
-            await interaction.reply({content: `Video submitted! ${JSON.stringify(deets)}`, ephemeral: true});
+            await addFirehoseVideo(interaction, deets as MinimalVideoDetails, user);
         } else {
 
             const titleComp = new TextInputBuilder()
@@ -83,10 +97,7 @@ module.exports = {
                         });
                     }
                 }
-                // TODO store video to db
-                // TODO determine channel to post to
-                // TODO post to channel
-                await modalRes.reply({content: `Video submitted! ${JSON.stringify(deets)}`, ephemeral: true});
+                await addFirehoseVideo(modalRes, deets as MinimalVideoDetails, user);
             } catch (e) {
                 throw e;
             }

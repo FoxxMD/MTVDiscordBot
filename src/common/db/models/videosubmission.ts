@@ -11,11 +11,14 @@ import {Video} from "./video.js";
 import {User} from "./user.js";
 import {ShowcasePost} from "./ShowcasePost.js";
 import {Guild} from "./Guild.js";
+import {BotClient} from "../../../BotClient.js";
+import {Client, TextChannel} from "discord.js";
 
 export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
 
   declare id: CreationOptional<number>;
   declare messageId: string;
+  declare channelId: string
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
@@ -35,6 +38,15 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
   declare user: NonAttribute<User>;
   declare video: NonAttribute<Video>;
   declare showcase?: NonAttribute<ShowcasePost>
+
+  getDiscordMessage = async (client: Client) => {
+      const channel = client.channels.cache.get(this.channelId) as TextChannel;
+      const messages = await channel.messages.fetch({around: this.messageId});
+      return messages.get(this.messageId);
+  }
+  getDiscordMessageLink = () => {
+    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
+  }
 }
 
 
@@ -46,6 +58,7 @@ export const init = (sequelize: Sequelize) => {
       primaryKey: true
     },
     messageId: DataTypes.STRING,
+    channelId: DataTypes.STRING,
     guildId: DataTypes.STRING,
     videoId: DataTypes.INTEGER,
     userId: DataTypes.INTEGER,

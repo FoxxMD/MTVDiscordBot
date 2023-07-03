@@ -20,8 +20,7 @@ import {valToString} from "../../../utils/index.js";
 
 export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'settings' }>, InferCreationAttributes<Guild>> {
 
-    declare id: CreationOptional<number>;
-    declare snowflake: string;
+    declare id: string;
     declare name: string
 
     declare createdAt: CreationOptional<Date>;
@@ -85,23 +84,15 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
 export const init = (sequelize: Sequelize) => {
     Guild.init({
         id: {
-            type: DataTypes.INTEGER.UNSIGNED,
-            autoIncrement: true,
+            type: DataTypes.STRING,
             primaryKey: true
         },
-        snowflake: DataTypes.STRING,
         name: DataTypes.STRING,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     }, {
         sequelize,
-        modelName: 'Guild',
-        indexes: [
-            {
-                unique: true,
-                fields: ['snowflake']
-            },
-        ]
+        modelName: 'Guild'
     });
 }
 

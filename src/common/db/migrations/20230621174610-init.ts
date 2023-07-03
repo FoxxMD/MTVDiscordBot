@@ -7,13 +7,9 @@ const migration: Migration = {
         await queryInterface.createTable('Guilds', {
             id: {
                 allowNull: false,
-                autoIncrement: true,
+                autoIncrement: false,
                 primaryKey: true,
-                type: Sequelize.INTEGER
-            },
-            snowflake: {
                 type: Sequelize.STRING,
-                allowNull: false,
                 unique: true
             },
             name: {
@@ -39,7 +35,7 @@ const migration: Migration = {
                 type: Sequelize.INTEGER.UNSIGNED
             },
             guildId: {
-                type: Sequelize.INTEGER.UNSIGNED,
+                type: Sequelize.STRING,
                 allowNull: false,
             },
             name: {
@@ -64,8 +60,8 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
-        await queryInterface.addIndex('Guilds', ['snowflake', 'name'], {type: 'UNIQUE'});
+        //await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Guilds', ['id', 'name'], {type: 'UNIQUE'});
 
         await queryInterface.createTable('Users', {
             id: {
@@ -75,7 +71,7 @@ const migration: Migration = {
                 type: Sequelize.INTEGER
             },
             guildId: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.STRING
             },
             name: {
                 type: Sequelize.STRING,
@@ -104,11 +100,14 @@ const migration: Migration = {
             messageId: {
                 type: Sequelize.STRING
             },
+            channelId: {
+                type: Sequelize.STRING
+            },
             videoId: {
                 type: Sequelize.INTEGER
             },
             guildId: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.STRING
             },
             userId: {
                 type: Sequelize.INTEGER.UNSIGNED
@@ -220,7 +219,7 @@ const migration: Migration = {
                 type: Sequelize.INTEGER
             },
             guildId: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.STRING
             },
             userId: {
                 type: Sequelize.INTEGER.UNSIGNED
