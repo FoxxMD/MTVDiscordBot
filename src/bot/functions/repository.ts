@@ -4,6 +4,7 @@ import {User} from "../../common/db/models/user.js";
 import {Guild} from "../../common/db/models/Guild.js";
 import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
+import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, db: Sequelize) => {
     // TODO reduce eager loading
@@ -48,4 +49,12 @@ export const getOrInsertGuild = async (dguild: DiscordGuild, db: Sequelize, logg
     } catch (e) {
         throw e;
     }
+}
+
+export const getUserLastSubmittedVideo = async (user: User) => {
+    const res = await VideoSubmission.findAll({where: {userId: user.id}, order: ['id', 'DESC'], limit: 3});
+    if(res.length > 0) {
+        return res[0];
+    }
+    return undefined;
 }

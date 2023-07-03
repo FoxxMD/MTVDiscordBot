@@ -9,9 +9,7 @@ import {
   Model,
   NonAttribute, HasManyGetAssociationsMixin, HasManyAddAssociationMixin, HasManyRemoveAssociationMixin, ForeignKey
 } from "sequelize";
-import {VideoSubmission} from "./videosubmission.js";
-import {Creator} from "./creator.js";
-import {User} from "./user.js";
+import dayjs, {Dayjs} from "dayjs";
 
 export class SubmissionTrustLevel extends Model<InferAttributes<SubmissionTrustLevel>, InferCreationAttributes<SubmissionTrustLevel>> {
 
@@ -24,6 +22,17 @@ export class SubmissionTrustLevel extends Model<InferAttributes<SubmissionTrustL
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  isRateLimited = (date: Date) => {
+    //return Math.abs(dayjs().diff(dayjs(date), 'seconds')) < this.timePeriod;
+    return this.limitRemaining(date) > 0;
+  }
+
+  limitRemaining = (date: Date) => {
+    const timeRemaining = this.timePeriod - Math.abs(dayjs().diff(dayjs(date), 'seconds'));
+
+    return Math.max(timeRemaining, 0);
+  }
 }
 
 export const init = (sequelize: Sequelize) => {

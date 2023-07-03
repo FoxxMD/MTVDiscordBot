@@ -7,7 +7,7 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, ForeignKey
+  NonAttribute, ForeignKey, BelongsToGetAssociationMixin
 } from "sequelize";
 import {Creator} from "./creator.js";
 import {User} from "./user.js";
@@ -23,6 +23,8 @@ export class UserTrustLevel extends Model<InferAttributes<UserTrustLevel>, Infer
   declare user?: NonAttribute<User>;
   declare givenBy?: NonAttribute<User>;
   declare level?: NonAttribute<SubmissionTrustLevel>;
+
+  declare getLevel: BelongsToGetAssociationMixin<SubmissionTrustLevel>;
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;

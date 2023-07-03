@@ -12,6 +12,7 @@ import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
 import {VideoManager} from "../../../common/video/VideoManager.js";
 import {timestampToDuration} from "../../../utils/StringUtils.js";
+import {rateLimitUser} from "../../../bot/functions/rateLimit.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,8 +23,12 @@ module.exports = {
             .setRequired(true)),
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
-        // TODO check if user is rate limited
         const user = await getOrInsertUser(interaction.member, bot.db);
+
+        await rateLimitUser(interaction, user);
+        if(interaction.replied) {
+            return;
+        }
 
         const url = interaction.options.getString('videourl');
 
