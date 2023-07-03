@@ -14,7 +14,7 @@ module.exports = {
             option.setName('channel')
                 .setDescription('The channel to post to')
                 .setRequired(true)),
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, db: Sequelize, logger: Logger, bot: Bot) {
+    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
         const guild = await getOrInsertGuild(interaction.guild, bot.db);
         const channel = interaction.options.getChannel('channel');
         await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, channel.id);
