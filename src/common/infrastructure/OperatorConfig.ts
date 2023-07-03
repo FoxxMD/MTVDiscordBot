@@ -19,9 +19,16 @@ export interface DiscordCredentials {
     clientId: string
 }
 
+export interface VimeoCredentials {
+    token: string
+    clientId: string
+    clientSecret
+}
+
 export interface Credentials {
         youtube?: string
         discord?: DiscordCredentials
+        vimeo?: VimeoCredentials
 }
 
 export interface StrongCredentials extends Credentials {

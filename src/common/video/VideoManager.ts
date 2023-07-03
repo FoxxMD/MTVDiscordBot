@@ -5,6 +5,7 @@ import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../../utils/index.js";
 import {ErrorWithCause} from "pony-cause";
 import urlParser from "js-video-url-parser";
+import {VimeoClient} from "./clients/VimeoClient.js";
 
 export class VideoManager {
 
@@ -12,6 +13,7 @@ export class VideoManager {
     protected logger: Logger;
 
     protected youtube?: YoutubeClient;
+    protected vimeo?: VimeoClient;
 
     constructor(creds: Credentials, logger: Logger) {
         this.credentials = creds;
@@ -19,6 +21,9 @@ export class VideoManager {
 
         if (this.credentials.youtube !== undefined) {
             this.youtube = new YoutubeClient(this.credentials.youtube);
+        }
+        if (this.credentials.vimeo !== undefined) {
+            this.vimeo = new VimeoClient(this.credentials.vimeo);
         }
     }
 
@@ -29,16 +34,32 @@ export class VideoManager {
         };
 
         const urlDetails = urlParser.parse(url);
-        if (urlDetails !== undefined && urlDetails.provider === 'youtube') {
+        if (urlDetails !== undefined) {
             details.id = urlDetails.id;
             details.platform = 'youtube';
-            if (this.youtube !== undefined) {
-                try {
-                    details = await this.youtube.getVideoDetails(urlDetails.id);
-                } catch (e) {
-                    this.logger.warn(new ErrorWithCause(`Unable to get video details for ${url}`, {cause: e}));
-                }
+            switch (urlDetails.provider) {
+                case 'youtube':
+                    details.platform = 'youtube';
+                    if (this.youtube !== undefined) {
+                        try {
+                            details = await this.youtube.getVideoDetails(urlDetails.id);
+                        } catch (e) {
+                            this.logger.warn(new ErrorWithCause(`Unable to get video details for ${url}`, {cause: e}));
+                        }
+                    }
+                    break;
+                case 'vimeo':
+                    details.platform = 'vimeo';
+                    if (this.vimeo !== undefined) {
+                        try {
+                            details = await this.vimeo.getVideoDetails(urlDetails.id);
+                        } catch (e) {
+                            this.logger.warn(new ErrorWithCause(`Unable to get video details for ${url}`, {cause: e}));
+                        }
+                    }
+                    break;
             }
+
         }
 
         return details;

@@ -1,6 +1,20 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
+        "Credentials": {
+            "properties": {
+                "discord": {
+                    "$ref": "#/definitions/DiscordCredentials"
+                },
+                "vimeo": {
+                    "$ref": "#/definitions/VimeoCredentials"
+                },
+                "youtube": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "DiscordCredentials": {
             "properties": {
                 "clientId": {
@@ -35,6 +49,9 @@
                 "db": {
                     "type": "boolean"
                 },
+                "discord": {
+                    "$ref": "#/definitions/LogLevel"
+                },
                 "file": {
                     "description": "Specify the minimum log level to output to rotating files. If `false` no log files will be created.",
                     "enum": [
@@ -57,16 +74,28 @@
                 }
             },
             "type": "object"
+        },
+        "VimeoCredentials": {
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {},
+                "token": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "clientId",
+                "clientSecret",
+                "token"
+            ],
+            "type": "object"
         }
     },
     "properties": {
         "credentials": {
-            "properties": {
-                "discord": {
-                    "$ref": "#/definitions/DiscordCredentials"
-                }
-            },
-            "type": "object"
+            "$ref": "#/definitions/Credentials"
         },
         "logging": {
             "$ref": "#/definitions/LoggingOptions",

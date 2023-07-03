@@ -356,6 +356,11 @@
   resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.17.tgz#0a6d1510395065171e3378a4afc587a3aefa7cc1"
   integrity sha512-aqayTNmeWrZcvnG2MG9eGYI6b7S5fl+yKgPs6bAjOTwPS316R5SxBGKvtSExfyoJU7pIeHJfsHI0Ji41RVMkvQ==
 
+"@types/vimeo@^2.1.5":
+  version "2.1.5"
+  resolved "https://registry.yarnpkg.com/@types/vimeo/-/vimeo-2.1.5.tgz#c290623c1598151d55514082e05cb698e0d0e592"
+  integrity sha512-LukJU8ejnJpCJJ/Dh6ZlosHCggJAYYSmkyKHsq9rEEAZgpK3pGi2fu2VFvuasvxoGAjTcjN46qRGgAzRNXW6tw==
+
 "@types/ws@^8.5.4":
   version "8.5.5"
   resolved "https://registry.yarnpkg.com/@types/ws/-/ws-8.5.5.tgz#af587964aa06682702ee6dcbc7be41a80e4b28eb"
