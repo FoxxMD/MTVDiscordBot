@@ -54,7 +54,7 @@ export class Bot {
             logger.info('Bot is now ready to init');
 
             for (const [id, guild] of this.client.guilds.cache) {
-                await getOrInsertGuild(guild, this.db, this.logger);
+                await getOrInsertGuild(guild, this.logger);
                 await registerGuildCommands(this.config.credentials.discord, guild.id, slashData, this.logger);
             }
             this.logger.info('Bot Init complete');

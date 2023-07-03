@@ -9,14 +9,17 @@ import {Video} from "../../common/db/models/video.js";
 import {MinimalVideoDetails} from "../../common/infrastructure/Atomic.js";
 import {SimpleError} from "../../utils/Errors.js";
 import {Creator} from "../../common/db/models/creator.js";
+import {populateGuildDefaults} from "./guildUtil.js";
 
-export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, db: Sequelize) => {
+export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild, db: Sequelize) => {
     // TODO reduce eager loading
     try {
-        let user = await User.findOne({where: {name: member.user.username}, include: {all: true, nested: true}});
+        let user = await User.findOne({where: {name: member.user.username, guildId: dguild.id}, include: {all: true, nested: true}});
         if (user === null) {
+            const guild = await getOrInsertGuild(dguild);
             user = await User.create({
-                name: member.user.username
+                name: member.user.username,
+                guildId: guild.id
             });
             await user.createTrustLevel({
                 trustLevelId: 1
@@ -28,7 +31,7 @@ export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildM
     }
 }
 
-export const getOrInsertGuild = async (dguild: DiscordGuild, db: Sequelize, logger?: Logger) => {
+export const getOrInsertGuild = async (dguild: DiscordGuild, logger?: Logger) => {
 
     try {
         let guild = await Guild.findOne({where: {id: dguild.id}, include: 'settings'});
@@ -37,13 +40,10 @@ export const getOrInsertGuild = async (dguild: DiscordGuild, db: Sequelize, logg
                 name: dguild.name,
                 id: dguild.id
             });
-            const defaultChannel = dguild.channels.cache.find(x => x.name.toLowerCase().includes('firehose'));
-            if (defaultChannel !== undefined) {
-                await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, defaultChannel.id);
-            }
             if (logger !== undefined) {
                 logger.verbose(`Created Guild ${dguild.name} (${dguild.id}) with ID ${guild.id}`);
             }
+            await populateGuildDefaults(guild, dguild);
         } else {
             if (logger !== undefined) {
                 logger.verbose(`Existing Guild ${dguild.name} (${dguild.id}) with ID ${guild.id}`);

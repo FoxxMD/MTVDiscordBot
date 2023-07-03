@@ -48,7 +48,7 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
         }
 
         const setting = this.settings.find(x => x.name.toLowerCase() === name.toLowerCase());
-        if (setting === undefined) {
+        if (setting === undefined || setting === null) {
             return undefined;
         }
         return setting;
@@ -62,13 +62,15 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
         return undefined;
     }
 
-    upsertSetting = async (name: string, value: any): Promise<GuildSetting> => {
+    upsertSetting = async (name: string, value: any, overwrite?: boolean): Promise<GuildSetting> => {
         // look for existing
         const existing = await this.getSetting(name);
         if (existing !== undefined) {
-            existing.value = valToString(value);
-            await this.addSetting(existing);
-            await existing.save();
+            if(overwrite) {
+                existing.value = valToString(value);
+                await this.addSetting(existing);
+                await existing.save();
+            }
             return existing;
         } else {
             return await this.createSetting({

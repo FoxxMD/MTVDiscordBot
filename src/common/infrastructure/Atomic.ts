@@ -1,5 +1,6 @@
 import {MESSAGE} from 'triple-beam';
 import {Logger} from '@foxxmd/winston';
+import {CacheType, ChatInputCommandInteraction, ModalSubmitInteraction} from "discord.js";
 
 export type LogLevel = "error" | "warn" | "info" | "verbose" | "debug";
 export const logLevels = ['error', 'warn', 'info', 'verbose', 'debug'];
@@ -84,3 +85,5 @@ export interface RegExResult {
     index: number
     named: NamedGroup
 }
+
+export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>;

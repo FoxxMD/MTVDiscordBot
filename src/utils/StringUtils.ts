@@ -95,18 +95,40 @@ export const timestampToDuration = (str: string): Duration => {
     throw new SimpleError(`Timestamp '${str}' did not match format HH:MM:SS`);
 }
 
-export const durationToTimestamp = (dur: Duration): string => {
+export const durationToNormalizedTime  = (dur: Duration): {hours: number, minutes: number, seconds: number} => {
     const totalSeconds = dur.asSeconds();
 
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds - (hours * 3600)) / 60);
     const seconds = totalSeconds - (hours * 3600) - (minutes * 60);
 
+    return {
+        hours,
+        minutes,
+        seconds
+    };
+}
+
+export const durationToTimestamp = (dur: Duration): string => {
+    const nTime = durationToNormalizedTime(dur);
+
     const parts: string[] = [];
-    if (hours !== 0) {
-        parts.push(hours.toString().padStart(2, "0"));
+    if (nTime.hours !== 0) {
+        parts.push(nTime.hours.toString().padStart(2, "0"));
     }
-    parts.push(minutes.toString().padStart(2, "0"));
-    parts.push(seconds.toString().padStart(2, "0"));
+    parts.push(nTime.minutes.toString().padStart(2, "0"));
+    parts.push(nTime.seconds.toString().padStart(2, "0"));
     return parts.join(':');
+}
+
+export const durationToHuman = (dur: Duration): string => {
+    const nTime = durationToNormalizedTime(dur);
+
+    const parts: string[] = [];
+    if (nTime.hours !== 0) {
+        parts.push(`${nTime.hours}hr`);
+    }
+    parts.push(`${nTime.minutes}min`);
+    parts.push(`${nTime.seconds}sec`);
+    return parts.join(' ');
 }

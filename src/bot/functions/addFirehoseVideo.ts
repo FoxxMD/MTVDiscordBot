@@ -1,4 +1,4 @@
-import {MinimalVideoDetails, VideoDetails} from "../../common/infrastructure/Atomic.js";
+import {InteractionLike, MinimalVideoDetails, VideoDetails} from "../../common/infrastructure/Atomic.js";
 import {User} from "../../common/db/models/user.js";
 import {getOrInsertVideo} from "./repository.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
@@ -9,7 +9,7 @@ import {GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {durationToTimestamp} from "../../utils/StringUtils.js";
 import dayjs from "dayjs";
 
-export const addFirehoseVideo = async (interaction: ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>, video: MinimalVideoDetails, user: User) => {
+export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
 
     const firehoseChannel = await GuildSetting.findOne({
         where: {
@@ -59,5 +59,3 @@ export const addFirehoseVideo = async (interaction: ChatInputCommandInteraction<
         throw e;
     }
 }
-
-// https://discord.com/channels/1082721650572796085/1121819515429335171/1125501387938209823

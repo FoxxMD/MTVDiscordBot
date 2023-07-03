@@ -16,7 +16,7 @@ import {
     BelongsToManyGetAssociationsMixin,
     HasOneCreateAssociationMixin,
     HasOneGetAssociationMixin,
-    HasOneSetAssociationMixin, ForeignKey
+    HasOneSetAssociationMixin, ForeignKey, BelongsToGetAssociationMixin
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
@@ -46,6 +46,8 @@ export class User extends Model<InferAttributes<User, {
     declare getTrustLevel: HasOneGetAssociationMixin<UserTrustLevel>;
     declare createTrustLevel: HasOneCreateAssociationMixin<UserTrustLevel>;
     // declare setTrustLevel: HasOneSetAssociationMixin<UserTrustLevel, 'id'>;
+
+    declare getGuild: BelongsToGetAssociationMixin<Guild>;
 
     declare submissions?: NonAttribute<VideoSubmission[]>;
     declare creators?: NonAttribute<Creator[]>;
@@ -89,7 +91,7 @@ export const init = (sequelize: Sequelize) => {
             allowNull: false,
             unique: true
         },
-        guildId: DataTypes.INTEGER,
+        guildId: DataTypes.STRING,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
     }, {

@@ -13,10 +13,10 @@ import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
 import {VideoManager} from "../../../common/video/VideoManager.js";
 import {timestampToDuration} from "../../../utils/StringUtils.js";
-import {rateLimitUser} from "../../../bot/functions/rateLimit.js";
 import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
 import {MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
+import {checkLengthConstraints, rateLimitUser} from "../../../bot/functions/userSubmissionFuncs.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,9 +27,9 @@ module.exports = {
             .setRequired(true)),
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
-        const user = await getOrInsertUser(interaction.member, bot.db);
+        const user = await getOrInsertUser(interaction.member, interaction.guild, bot.db);
 
-        //await rateLimitUser(interaction, user);
+        await rateLimitUser(interaction, user);
         if(interaction.replied) {
             return;
         }
@@ -55,7 +55,13 @@ module.exports = {
             }
         }
 
+
+
         if (deets.duration !== undefined && deets.title !== undefined) {
+            await checkLengthConstraints(deets.duration, interaction, user);
+            if(interaction.replied) {
+                return;
+            }
             await addFirehoseVideo(interaction, deets as MinimalVideoDetails, user);
         } else {
 
@@ -96,6 +102,10 @@ module.exports = {
                             ephemeral: true
                         });
                     }
+                }
+                await checkLengthConstraints(deets.duration, modalRes, user);
+                if(interaction.replied) {
+                    return;
                 }
                 await addFirehoseVideo(modalRes, deets as MinimalVideoDetails, user);
             } catch (e) {
