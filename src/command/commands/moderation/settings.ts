@@ -18,7 +18,7 @@ module.exports = {
                         .setRequired(false))
         )
         .addSubcommand(subCommand =>
-            subCommand.setName('videolength')
+            subCommand.setName('video-length')
                 .setDescription('Display or set min/max lengths allowed for videos')
                 .addNumberOption(opt =>
                     opt.setName('min')
@@ -30,26 +30,38 @@ module.exports = {
                         .setDescription('The maximum length (seconds) submitted videos must be')
                         .setRequired(false)
                         .setMinValue(1))
-        ),
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('rate-limiting')
+                .setDescription('Display or set submission rate limiting for users')
+                .addBooleanOption(opt =>
+                    opt.setName('limiting')
+                        .setDescription('Set limiting mode')
+                        .setRequired(false))
+        )
+    ,
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
         const guild = await getOrInsertGuild(interaction.guild, logger);
 
-        switch(interaction.options.getSubcommand()) {
+        switch (interaction.options.getSubcommand()) {
             case 'firehose':
                 const channel = interaction.options.getChannel('channel');
-                if(channel === undefined) {
+                if (channel === undefined) {
                     const subChannel = await guild.getSettingValue<string>(GuildSettings.SUBMISSION_CHANNEL);
                     await interaction.reply({content: `Submission channel is #${subChannel}`, ephemeral: true});
                 } else {
                     await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, channel.id);
-                    await interaction.reply({content: `Set => Submission channel is #${channel.name}`, ephemeral: true});
+                    await interaction.reply({
+                        content: `Set => Submission channel is #${channel.name}`,
+                        ephemeral: true
+                    });
                 }
                 break;
-            case 'videolength':
+            case 'video-length':
                 const min = interaction.options.getNumber('min');
                 const max = interaction.options.getNumber('max');
-                if(min === null && max === null) {
+                if (min === null && max === null) {
                     const minSetting = await guild.getSettingValue<number>(GuildSettings.MIN_SECONDS);
                     const maxSetting = await guild.getSettingValue<number>(GuildSettings.MAX_SECONDS)
                     await interaction.reply({content: `Min: ${minSetting}s | Max: ${maxSetting}s`, ephemeral: true});
@@ -59,8 +71,21 @@ module.exports = {
                     await interaction.reply({content: `Set => Min: ${min}s | Max: ${max}s`, ephemeral: true});
                 }
                 break;
+            case 'rate-limiting':
+                const limit = interaction.options.getBoolean('limiting');
+                if(limit === null || limit === undefined) {
+                    const limitSetting = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
+                    await interaction.reply({content: `Rate Limiting: ${limitSetting ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
+                } else {
+                    await guild.upsertSetting(GuildSettings.RATE_LIMIT_MODE, limit, true);
+                    await interaction.reply({content: `Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
+                }
+                break;
             default:
-                await interaction.reply({content: `Unrecognized command: ${interaction.options.getSubcommand()}`, ephemeral: true});
+                await interaction.reply({
+                    content: `Unrecognized command: ${interaction.options.getSubcommand()}`,
+                    ephemeral: true
+                });
         }
     }
 }

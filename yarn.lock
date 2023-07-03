@@ -2712,6 +2712,11 @@ to-regex-range@^5.0.1:
   dependencies:
     is-number "^7.0.0"
 
+toad-scheduler@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/toad-scheduler/-/toad-scheduler-3.0.0.tgz#784c66fd6dc4a1611918a033c51500df1c5e9839"
+  integrity sha512-BYmrORvaGmjziir/ra8qD3qAKczJveqK5ZOO/wn7oS5qLI4iibOza3DBGgu+EwNp9zdlBTKSeZPmxZxzGy1dxw==
+
 token-types@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/token-types/-/token-types-5.0.1.tgz#aa9d9e6b23c420a675e55413b180635b86a093b4"

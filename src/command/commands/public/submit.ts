@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
 import {MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
 import {checkLengthConstraints, rateLimitUser} from "../../../bot/functions/userSubmissionFuncs.js";
+import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,10 +29,14 @@ module.exports = {
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
         const user = await getOrInsertUser(interaction.member, interaction.guild, bot.db);
+        const guild = await user.getGuild();
+        const limited = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
 
-        await rateLimitUser(interaction, user);
-        if(interaction.replied) {
-            return;
+        if(limited) {
+            await rateLimitUser(interaction, user);
+            if(interaction.replied) {
+                return;
+            }
         }
 
         const url = interaction.options.getString('videourl');
