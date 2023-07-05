@@ -108,7 +108,7 @@ module.exports = {
                 break;
             case 'category-showcase':
                 const showcaseCategoryChannel = interaction.options.getChannel('name') as CategoryChannel | undefined;
-                if(showcaseCategoryChannel === undefined) {
+                if(showcaseCategoryChannel === undefined || showcaseCategoryChannel === null) {
                     const showcaseChannel = await guild.getSettingValue<string>(GuildSettings.CATEGORY_SHOWCASE);
                     let val = 'None Set';
                     if(showcaseChannel !== undefined) {
@@ -123,7 +123,7 @@ module.exports = {
                 break;
             case 'category-oc':
                 const ocCategoryChannel = interaction.options.getChannel('name') as CategoryChannel | undefined;
-                if(ocCategoryChannel === undefined) {
+                if(ocCategoryChannel === undefined || ocCategoryChannel === null) {
                     const ocChannel = await guild.getSettingValue<string>(GuildSettings.CATEGORY_OC);
                     let val = 'None Set';
                     if(ocChannel !== undefined) {

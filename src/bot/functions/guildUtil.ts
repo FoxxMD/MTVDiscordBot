@@ -7,8 +7,11 @@ import {Logger} from "@foxxmd/winston";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 
 export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuild, logger: Logger) => {
+
+    const channels =  await discGuild.channels.fetch();
+
     // init default submission channel
-    const defaultChannel = discGuild.channels.cache.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.SUBMISSION_CHANNEL));
+    const defaultChannel = channels.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.SUBMISSION_CHANNEL));
     if (defaultChannel !== undefined) {
         await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, defaultChannel.id);
     }
@@ -40,6 +43,17 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
                 discordRoleName: defaultRole.name,
             });
         }
+    }
+
+    // default categories
+    const showcaseCat = channels.find(x => x instanceof CategoryChannel && x.name.toLowerCase().includes('videos [x-x'));
+    if(showcaseCat !== undefined) {
+        await guild.upsertSetting(GuildSettings.CATEGORY_SHOWCASE, showcaseCat.id);
+    }
+
+    const ocCat = channels.find(x => x instanceof CategoryChannel && x.name.toLowerCase().includes('original content [x-x'));
+    if(ocCat !== undefined) {
+        await guild.upsertSetting(GuildSettings.CATEGORY_OC, ocCat.id);
     }
 
 
