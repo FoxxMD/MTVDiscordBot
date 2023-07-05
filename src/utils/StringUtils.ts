@@ -187,3 +187,11 @@ export const formatNumber = (val: number | string, options?: numberFormatOptions
     });
     return `${prefixStr}${localeString}${suffix}`;
 };
+
+export const truncateStringToLength = (length: any, truncStr = '...') => (val: any = '') =>  {
+    if(val === null) {
+        return '';
+    }
+    const str = typeof val !== 'string' ? val.toString() : val;
+    return str.length > length ? `${str.slice(0, length)}${truncStr}` : str;
+}

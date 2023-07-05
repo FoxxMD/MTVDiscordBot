@@ -20,6 +20,7 @@ import {Logger} from "@foxxmd/winston";
 import {getShowcaseChannelFromCategory} from "./guildUtil.js";
 import {commaListsAnd} from "common-tags";
 import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
+import {ErrorWithCause} from "pony-cause";
 
 export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubmission, logger: Logger) => {
 
@@ -97,6 +98,6 @@ export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubm
         videoSubmission.active = false;
         await videoSubmission.save();
     } catch (e) {
-        throw e;
+        throw new ErrorWithCause(`Failed to add Video Submission ${videoSubmission.id} to showcase`, {cause: e});
     }
 }

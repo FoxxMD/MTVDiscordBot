@@ -116,3 +116,9 @@ export interface numberFormatOptions {
         indicate?: boolean,
     }
 }
+
+export const VideoReactions = {
+    UP: '👍',
+    DOWN: '👎',
+    REPORT: '❌'
+};

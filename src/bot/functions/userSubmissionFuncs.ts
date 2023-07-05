@@ -98,7 +98,8 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
 }
 
 export const checkRules = async (interaction: InteractionLike, user: User) => {
-    const ruleRoleExists = (await user.guild.getRoleIdsByType(ROLE_TYPES.TOS)).length > 0;
+    const ruleRoles = await ((await user.getGuild()).getRoleIdsByType(ROLE_TYPES.TOS));
+    const ruleRoleExists = ruleRoles.length > 0
     if(!ruleRoleExists) {
         return;
     }

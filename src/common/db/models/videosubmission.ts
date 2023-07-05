@@ -114,8 +114,8 @@ export const init = (sequelize: Sequelize) => {
 }
 
 export const associate = () => {
-  VideoSubmission.belongsTo(Video, {targetKey: 'id', as: 'guild'});
+  VideoSubmission.belongsTo(Guild, {targetKey: 'id', as: 'guild'});
   VideoSubmission.belongsTo(User, {targetKey: 'id', as: 'user'});
-  VideoSubmission.belongsTo(Guild, {targetKey: 'id', as: 'video'});
+  VideoSubmission.belongsTo(Video, {targetKey: 'id', as: 'video'});
   VideoSubmission.hasOne(ShowcasePost, {foreignKey: 'submissionId', as: 'showcase'});
 }

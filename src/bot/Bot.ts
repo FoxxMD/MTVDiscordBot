@@ -7,6 +7,9 @@ import {initCommands, registerGuildCommands} from "../command/handler.js";
 import {Events, TextChannel} from "discord.js";
 import {logLevels} from "../common/logging.js";
 import {getOrInsertGuild} from "./functions/repository.js";
+import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
+import {processFirehoseVideos} from "./functions/firehose.js";
+import {scheduler} from "timers/promises";
 
 export class Bot {
     protected client: BotClient;
@@ -22,6 +25,8 @@ export class Bot {
     }
 
     async init(logger: Logger) {
+
+        const scheduler = new ToadScheduler()
 
         try {
             const slashData = await initCommands(this.client, this.config.credentials.discord, this);
@@ -58,7 +63,26 @@ export class Bot {
                 await registerGuildCommands(this.config.credentials.discord, guild.id, slashData, this.logger);
             }
             this.logger.info('Bot Init complete');
+
+            this.logger.info('Starting scheduler...');
+
+            const task = new AsyncTask(
+                'Process Firehose',
+                () => {
+                    for(const [id, guild] of this.client.guilds.cache) {
+                        return processFirehoseVideos(guild, this.logger).then();
+                    }
+                },
+                (err: Error) => {
+                    this.logger.error(err);
+                }
+            )
+            const job = new SimpleIntervalJob({ seconds: 30, }, task)
+            scheduler.addSimpleIntervalJob(job);
+
+            this.logger.info('Scheduler started.');
         } catch (e) {
+            scheduler.stop();
             throw e;
         }
     }
