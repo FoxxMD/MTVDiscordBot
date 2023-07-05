@@ -18,13 +18,14 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
 
   declare id: CreationOptional<number>;
   declare messageId: string;
-  declare channelId: string
+  declare channelId: string;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
   declare upvotes: CreationOptional<number>;
   declare downvotes: CreationOptional<number>;
   declare url: CreationOptional<string>;
+  declare active: boolean;
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -41,8 +42,7 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
 
   getDiscordMessage = async (client: Client) => {
       const channel = client.channels.cache.get(this.channelId) as TextChannel;
-      const messages = await channel.messages.fetch({around: this.messageId});
-      return messages.get(this.messageId);
+      return await channel.messages.fetch(this.messageId);
   }
   getDiscordMessageLink = () => {
     return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
@@ -63,8 +63,18 @@ export const init = (sequelize: Sequelize) => {
     videoId: DataTypes.INTEGER,
     userId: DataTypes.INTEGER,
     url: DataTypes.STRING,
-    upvotes: DataTypes.INTEGER,
-    downvotes: DataTypes.INTEGER,
+    active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    upvotes: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    downvotes: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
   }, {

@@ -52,6 +52,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
             userId: user.id,
             upvotes: 0,
             downvotes: 0,
+            active: true
         });
 
         await interaction.reply({content: `Video Submitted! ${submissionMessage.url}`, ephemeral: true});

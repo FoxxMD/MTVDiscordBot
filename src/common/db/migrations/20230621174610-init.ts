@@ -98,28 +98,42 @@ const migration: Migration = {
                 type: Sequelize.INTEGER.UNSIGNED
             },
             messageId: {
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
+                allowNull: false,
             },
             channelId: {
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
+                allowNull: false
             },
             videoId: {
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER,
+                allowNull: false
             },
             guildId: {
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
+                allowNull: false,
             },
             userId: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.INTEGER.UNSIGNED,
+                allowNull: false,
             },
             url: {
                 type: Sequelize.STRING
             },
+            active: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: true,
+                allowNull: false,
+            },
             upvotes: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.INTEGER.UNSIGNED,
+                defaultValue: 0,
+                allowNull: false,
             },
             downvotes: {
-                type: Sequelize.INTEGER.UNSIGNED
+                type: Sequelize.INTEGER.UNSIGNED,
+                defaultValue: 0,
+                allowNull: false
             },
             createdAt: {
                 allowNull: false,
