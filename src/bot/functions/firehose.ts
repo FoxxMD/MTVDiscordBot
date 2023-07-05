@@ -11,7 +11,7 @@ import {BotClient} from "../../BotClient.js";
 import {
     CacheType,
     ChatInputCommandInteraction,
-    Guild as DiscordGuild,
+    Guild as DiscordGuild, Message,
     ModalSubmitInteraction,
     TextChannel
 } from "discord.js";
@@ -24,6 +24,7 @@ import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../../utils/index.js";
 import {addShowcaseVideo} from "./showcase.js";
 import {Video} from "../../common/db/models/video.js";
+import {ErrorWithCause} from "pony-cause";
 
 export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
 
@@ -79,7 +80,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
 
 export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: Logger) => {
 
-    const logger = parentLogger.child({labels: ['Firehose']}, mergeArr);
+    const flogger = parentLogger.child({labels: ['Firehose']}, mergeArr);
 
     const guild = await getOrInsertGuild(dguild);
 
@@ -100,16 +101,24 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
         ]
     });
 
-    logger.verbose(`Found ${activeSubmissions.length} active Video Submissions`);
+    flogger.verbose(`Found ${activeSubmissions.length} active Video Submissions`);
 
     if (activeSubmissions.length > 0) {
         for (const asub of activeSubmissions) {
-            const channel = await dguild.channels.fetch(asub.channelId) as TextChannel;
-            const message = await channel.messages.fetch(asub.messageId);
 
-            if(message === undefined) {
-                logger.warn(`No message with ID ${asub.messageId} exists for Video Submission ${asub.id} => ${truncateStringToLength(30)((await asub.getVideo()).title)} -- assuming it was deleted! Removing Submission`);
-                await asub.destroy();
+            const logger = flogger.child({labels: [`Sub ${asub.id}`]});
+
+            const channel = await dguild.channels.fetch(asub.channelId) as TextChannel;
+            let message: Message;
+            try {
+                message = await channel.messages.fetch(asub.messageId);
+            } catch (e) {
+                if(e.code === 10008) {
+                    logger.warn(`No message with ID ${asub.messageId} exists for => ${truncateStringToLength(30)((await asub.getVideo()).title)} -- assuming it was deleted! Removing Submission`);
+                    await asub.destroy();
+                } else {
+                    logger.warn(new ErrorWithCause(`An error preventing fetching Discord Message`, {cause: e}));
+                }
                 continue;
             }
 
@@ -130,7 +139,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                 const total = asub.upvotes + asub.downvotes;
                 const percent = (asub.upvotes / total) * 100;
                 const statusParts: string[] = [
-                    `Submission ${asub.id} => ${truncateStringToLength(30)((await asub.getVideo()).title)} => Upvotes ${asub.upvotes} of ${total} (${formatNumber(percent)}%)`
+                    `${truncateStringToLength(30)((await asub.getVideo()).title)} => Upvotes ${asub.upvotes} of ${total} (${formatNumber(percent)}%)`
                 ];
                 if (percent > 50) {
                     statusParts.push('=> WILL SHOWCASE');
