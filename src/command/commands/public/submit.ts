@@ -8,6 +8,7 @@ import {
     ActionRowBuilder,
     time
 } from "discord.js";
+import {oneLine} from 'common-tags';
 import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
@@ -51,10 +52,10 @@ module.exports = {
             if (!isValidToSubmit) {
                 const lastSubmission = await existingVideo.getLastSubmission();
                 return await interaction.reply({
-                    content: [
-                        `This video was last submitted ${time(lastSubmission.createdAt)} (${time(lastSubmission.createdAt, 'R')}) here ${lastSubmission.getDiscordMessageLink()}`,
-                        `At least one month must pass between submissions of the same video.`
-                    ].join(' '),
+                    content: oneLine`
+                    This video was last submitted ${time(lastSubmission.createdAt)} (${time(lastSubmission.createdAt, 'R')}) 
+                    here ${lastSubmission.getDiscordMessageLink()}.
+                    At least one month must pass between submissions of the same video.`,
                     ephemeral: true
                 });
             }
