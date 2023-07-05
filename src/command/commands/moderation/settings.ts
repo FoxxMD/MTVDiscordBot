@@ -115,10 +115,10 @@ module.exports = {
                         const channel = interaction.guild.channels.resolve(showcaseChannel);
                         val = channel.name;
                     }
-                    await interaction.reply({content: val});
+                    await interaction.reply({content: val, ephemeral: true});
                 } else {
                     await guild.upsertSetting(GuildSettings.CATEGORY_SHOWCASE, showcaseCategoryChannel.id, true);
-                    await interaction.reply({content: `Set Showcase Category => ${showcaseCategoryChannel.name}`});
+                    await interaction.reply({content: `Set Showcase Category => ${showcaseCategoryChannel.name}`, ephemeral: true});
                 }
                 break;
             case 'category-oc':
@@ -130,10 +130,10 @@ module.exports = {
                         const channel = interaction.guild.channels.resolve(ocChannel);
                         val = channel.name;
                     }
-                    await interaction.reply({content: val});
+                    await interaction.reply({content: val, ephemeral: true});
                 } else {
                     await guild.upsertSetting(GuildSettings.CATEGORY_OC, ocCategoryChannel.id, true);
-                    await interaction.reply({content: `Set OC Category => ${ocCategoryChannel.name}`});
+                    await interaction.reply({content: `Set OC Category => ${ocCategoryChannel.name}`, ephemeral: true});
                 }
                 break;
             default:
