@@ -1,7 +1,10 @@
 import {User} from "../../common/db/models/user.js";
 import {submissionInGoodStanding} from "./index.js";
-import {EmbedBuilder} from "discord.js";
+import {EmbedBuilder, GuildMember} from "discord.js";
 import dayjs from "dayjs";
+import {InteractionLike, SpecialRoleType} from "../../common/infrastructure/Atomic.js";
+import {getOrInsertGuild} from "./repository.js";
+import {intersect} from "../../utils/index.js";
 
 export const buildStandingProfile = async (user: User) => {
     const submissions = await user.getSubmissions();
@@ -39,4 +42,13 @@ export const buildStandingProfile = async (user: User) => {
     );
 
     return embed;
+}
+
+export const memberHasRoleType = async (roleType: SpecialRoleType, interaction: InteractionLike) => {
+    const guild = await getOrInsertGuild(interaction.guild);
+    const roles = interaction.member.roles as string[];
+
+    const specialRoles = await guild.getRoleIdsByType(roleType);
+
+    return (intersect(roles, specialRoles)).length > 0;
 }

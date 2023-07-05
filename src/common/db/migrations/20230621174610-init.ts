@@ -242,7 +242,11 @@ const migration: Migration = {
                 type: Sequelize.STRING
             },
             nsfw: {
-                type: Sequelize.BOOLEAN
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            popular: {
+                type: Sequelize.BOOLEAN,
             },
             createdAt: {
                 allowNull: false,

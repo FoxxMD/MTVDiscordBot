@@ -1,11 +1,17 @@
 import {User} from "../../common/db/models/user.js";
 import {CacheType, ChatInputCommandInteraction, time} from "discord.js";
 import {oneLine} from 'common-tags';
-import {getUserLastSubmittedVideo} from "./repository.js";
+import {getCreatorByDetails, getUserLastSubmittedVideo} from "./repository.js";
 import dayjs from "dayjs";
-import {InteractionLike} from "../../common/infrastructure/Atomic.js";
+import {
+    InteractionLike,
+    MinimalCreatorDetails,
+    MinimalVideoDetails,
+    VideoDetails
+} from "../../common/infrastructure/Atomic.js";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
-import {durationToHuman} from "../../utils/StringUtils.js";
+import {durationToHuman, formatNumber} from "../../utils/StringUtils.js";
+import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
@@ -43,6 +49,28 @@ export const checkLengthConstraints = async (length: number, interaction: Intera
             but your submission is **${durationToHuman(dayjs.duration({seconds: length}))}**
             `,
             ephemeral: true
+        });
+    }
+}
+
+export const checkSelfPromotion = async (interaction: InteractionLike, platform: string, details: MinimalCreatorDetails, user: User) => {
+    const creator = await getCreatorByDetails(platform, details);
+    const submissions = await VideoSubmission.findAll({where: {userId: user.id}, include: {all: true, nested: true}})
+    if (submissions.length < 3) {
+        // grace period when they have little history
+        return;
+    }
+    const originSubmissions = submissions.filter(x => x.video.creator.platformId === details.id);
+    if (originSubmissions.length === 0) {
+        return;
+    }
+    const percent = (originSubmissions.length / submissions.length) * 100;
+    if (percent > 20) {
+        await interaction.reply({
+            content: oneLine`
+            ${formatNumber(percent, {toFixed: 0})}% of your submissions are from the creator ${creator.name}
+            which is above the allowed limit of 20% and considered self-promotion. Please submit videos from a variety of sources.
+            `
         });
     }
 }

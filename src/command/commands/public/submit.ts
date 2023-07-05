@@ -12,13 +12,15 @@ import {oneLine} from 'common-tags';
 import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
-import {VideoManager} from "../../../common/video/VideoManager.js";
+import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
 import {timestampToDuration} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
-import {MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
-import {checkLengthConstraints, rateLimitUser} from "../../../bot/functions/userSubmissionFuncs.js";
+import {MinimalCreatorDetails, MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
+import {checkLengthConstraints, checkSelfPromotion, rateLimitUser} from "../../../bot/functions/userSubmissionFuncs.js";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
+import {memberHasRoleType} from "../../../bot/functions/userUtil.js";
+import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -42,7 +44,7 @@ module.exports = {
 
         const url = interaction.options.getString('videourl');
 
-        const manager = new VideoManager(bot.config.credentials, bot.logger);
+        const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
         const deets = await manager.getVideoDetails(url);
 
@@ -61,7 +63,20 @@ module.exports = {
             }
         }
 
-
+        // can ignore self-promo if user is allowed
+        const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
+        if(!hasAllowedRole && deets.creator.id !== undefined) {
+            // now check creator popularity (gated by allow role check to reduce platform api calls)
+            const popular = manager.checkPopularity(deets.platform, deets.creator as MinimalCreatorDetails);
+            if(!popular) {
+                // either cannot get popularity from platform (api unsupported) or creator is not popular
+                // so check for self-promo
+                await checkSelfPromotion(interaction, deets.platform, deets.creator as MinimalCreatorDetails, user);
+                if(interaction.replied) {
+                    return;
+                }
+            }
+        }
 
         if (deets.duration !== undefined && deets.title !== undefined) {
             await checkLengthConstraints(deets.duration, interaction, user);

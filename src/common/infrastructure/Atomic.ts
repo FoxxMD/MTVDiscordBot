@@ -1,5 +1,4 @@
 import {MESSAGE} from 'triple-beam';
-import {Logger} from '@foxxmd/winston';
 import {CacheType, ChatInputCommandInteraction, ModalSubmitInteraction} from "discord.js";
 
 export type LogLevel = "error" | "warn" | "info" | "verbose" | "debug";
@@ -59,6 +58,21 @@ export const staffRoleKeywords = ['moderation', 'admin'];
 
 export type Platform = 'youtube' | 'vimeo' | string;
 
+export const ApiSupportedPlatforms: Platform[] = ['youtube', 'vimeo'];
+
+export interface CreatorDetails {
+    id?: string
+    name?: string
+    followers?: number
+    createdAt?: Date
+}
+
+export interface MinimalCreatorDetails extends CreatorDetails {
+    id: string
+}
+
+export type FullCreatorDetails = Required<CreatorDetails>;
+
 export interface VideoDetails {
     duration?: number,
     id: string
@@ -66,13 +80,13 @@ export interface VideoDetails {
     url: string
     nsfw?: boolean
     title?: string
-    authorName?: string
-    authorId?: string
+    creator?: CreatorDetails
 }
 
 export interface MinimalVideoDetails extends VideoDetails {
     duration: number
     title: string
+    creator: MinimalCreatorDetails
 }
 
 export interface NamedGroup {
@@ -89,3 +103,15 @@ export interface RegExResult {
 export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>;
 
 export type SpecialRoleType = 'approved' | 'janitor';
+
+export interface numberFormatOptions {
+    toFixed: number,
+    defaultVal?: any,
+    prefix?: string,
+    suffix?: string,
+    round?: {
+        type?: string,
+        enable: boolean,
+        indicate?: boolean,
+    }
+}

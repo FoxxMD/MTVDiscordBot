@@ -22,6 +22,7 @@ import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
 import {UserTrustLevel} from "./UserTrustLevel.js";
 import {Guild} from "./Guild.js";
+import {SpecialRoleType} from "../../infrastructure/Atomic.js";
 
 export class User extends Model<InferAttributes<User, {
     omit: 'submissions' | 'creators' | 'trustLevel'

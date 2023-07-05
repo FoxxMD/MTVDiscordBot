@@ -6,7 +6,7 @@ import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 import {Video} from "../../common/db/models/video.js";
-import {MinimalVideoDetails} from "../../common/infrastructure/Atomic.js";
+import {CreatorDetails, MinimalVideoDetails} from "../../common/infrastructure/Atomic.js";
 import {SimpleError} from "../../utils/Errors.js";
 import {Creator} from "../../common/db/models/creator.js";
 import {populateGuildDefaults} from "./guildUtil.js";
@@ -14,7 +14,10 @@ import {populateGuildDefaults} from "./guildUtil.js";
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild, db: Sequelize) => {
     // TODO reduce eager loading
     try {
-        let user = await User.findOne({where: {name: member.user.username, guildId: dguild.id}, include: {all: true, nested: true}});
+        let user = await User.findOne({
+            where: {name: member.user.username, guildId: dguild.id},
+            include: {all: true, nested: true}
+        });
         if (user === null) {
             const guild = await getOrInsertGuild(dguild);
             user = await User.create({
@@ -65,7 +68,7 @@ export const getUserLastSubmittedVideo = async (user: User) => {
 
 export const getVideoByVideoId = async (id: string, platform: string) => {
     const vid = await Video.findOne({where: {platformId: id, platform}, include: 'creator'});
-    if(vid === null) {
+    if (vid === null) {
         return undefined;
     }
     return vid;
@@ -84,14 +87,39 @@ export const getOrInsertVideo = async (details: MinimalVideoDetails) => {
         length: details.duration,
         nsfw: details.nsfw ?? false
     });
-    if (details.authorName !== undefined || details.authorId !== undefined) {
-        const creator = await upsertVideoCreator(details.platform, details.authorId, details.authorName);
+    if (details.creator !== undefined) {
+        const creator = await upsertVideoCreator(details.platform, details.creator);
         await vid.setCreator(creator);
     }
     return vid;
 }
 
-export const upsertVideoCreator = async (platform: string, platformId?: string, name?: string) => {
+export const upsertVideoCreator = async (platform: string, details: CreatorDetails) => {
+    const {id: platformId, name} = details;
+
+    const creator = await getCreatorByDetails(platform, details);
+
+    let creatorEntity: Creator = creator !== undefined ? creator : undefined;
+    // naive
+    if(creatorEntity !== undefined) {
+        // if (creatorEntity.name !== name) {
+        //     creatorEntity.name = name;
+        //     await creatorEntity.save();
+        // }
+        return creatorEntity;
+    }
+
+    creatorEntity = await Creator.create({
+        platform,
+        platformId,
+        name,
+        nsfw: false
+    });
+    return creatorEntity;
+}
+
+export const getCreatorByDetails = async (platform: string, details: CreatorDetails) => {
+    const {id: platformId, name} = details;
     if (platformId === undefined && name === undefined) {
         throw new SimpleError('Must provide either platformId or name');
     }
@@ -108,24 +136,8 @@ export const upsertVideoCreator = async (platform: string, platformId?: string, 
             [Op.or]: criteria
         }
     });
-    let creatorEntity: Creator;
-    // naive
-    if (creators.length === 1) {
-        creatorEntity = creators[0];
-        if (creatorEntity.name !== name) {
-            creatorEntity.name = name;
-            await creatorEntity.save();
-        }
-        return creatorEntity;
-    } else if (creators.length > 1) {
-        return creators[0];
+    if (creators.length > 0) {
+        return creators[1];
     }
-
-    creatorEntity = await Creator.create({
-        platform,
-        platformId,
-        name,
-        nsfw: false
-    });
-    return creatorEntity;
+    return undefined;
 }

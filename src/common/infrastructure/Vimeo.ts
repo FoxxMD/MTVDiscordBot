@@ -16,8 +16,34 @@ export interface VimeoUser {
     link: string
 }
 
-export interface VimeoResponse {
+export interface VimeoResponse<ResponseType> {
     statusCode: number
-    body: VimeoVideo
+    body: ResponseType
     headers: Record<string, any>
+}
+
+export interface VimeoUserFull {
+    name: string
+    uri: string
+    created_time: string
+    metadata: {
+        connections: {
+            followers: {
+                total: number
+            }
+        }
+    }
+}
+
+export interface VimeoChannel {
+    name: string
+    uri: string
+    created_time: string
+    metadata: {
+        connections: {
+            users: {
+                total: number
+            }
+        }
+    }
 }
