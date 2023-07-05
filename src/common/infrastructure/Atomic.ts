@@ -87,3 +87,5 @@ export interface RegExResult {
 }
 
 export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>;
+
+export type SpecialRoleType = 'approved' | 'janitor';

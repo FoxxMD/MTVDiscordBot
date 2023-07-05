@@ -2,6 +2,7 @@ import {Duration} from "dayjs/plugin/duration.js";
 import {RegExResult} from "../common/infrastructure/Atomic.js";
 import {SimpleError} from "./Errors.js";
 import dayjs from "dayjs";
+import {TemplateTag, stripIndentTransformer, TemplateTransformer, trimResultTransformer} from 'common-tags'
 
 export const parseRegex = (reg: RegExp, val: string): RegExResult[] | undefined => {
 
@@ -95,7 +96,7 @@ export const timestampToDuration = (str: string): Duration => {
     throw new SimpleError(`Timestamp '${str}' did not match format HH:MM:SS`);
 }
 
-export const durationToNormalizedTime  = (dur: Duration): {hours: number, minutes: number, seconds: number} => {
+export const durationToNormalizedTime = (dur: Duration): { hours: number, minutes: number, seconds: number } => {
     const totalSeconds = dur.asSeconds();
 
     const hours = Math.floor(totalSeconds / 3600);
@@ -132,3 +133,18 @@ export const durationToHuman = (dur: Duration): string => {
     parts.push(`${nTime.seconds}sec`);
     return parts.join(' ');
 }
+
+const markdownListTransformer: TemplateTransformer = {
+    onSubstitution(substitution, resultSoFar, context) {
+        if (Array.isArray(substitution)) {
+            return substitution.map(x => `* ${x}`).join('\n');
+        }
+        return substitution;
+    }
+}
+
+export const markdownTag = new TemplateTag(
+    markdownListTransformer,
+    stripIndentTransformer('initial'),
+    trimResultTransformer()
+);

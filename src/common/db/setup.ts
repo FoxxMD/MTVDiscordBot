@@ -8,6 +8,7 @@ import * as userLevel from './models/UserTrustLevel.js';
 import * as guild from './models/Guild.js';
 import * as showcase from './models/ShowcasePost.js';
 import * as guildSettings from './models/GuildSetting.js';
+import * as specialRole from './models/SpecialRole.js';
 
 export const setupMappings = (db: Sequelize) => {
     user.init(db);
@@ -19,6 +20,7 @@ export const setupMappings = (db: Sequelize) => {
     guild.init(db);
     showcase.init(db);
     guildSettings.init(db);
+    specialRole.init(db);
 
     guild.associate();
     guildSettings.associate();
@@ -29,4 +31,5 @@ export const setupMappings = (db: Sequelize) => {
     subLevel.associate();
     userLevel.associate();
     showcase.associate();
+    specialRole.associate();
 }

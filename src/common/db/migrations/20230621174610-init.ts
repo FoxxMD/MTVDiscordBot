@@ -27,6 +27,9 @@ const migration: Migration = {
             }
         });
 
+        //await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Guilds', ['id', 'name'], {type: 'UNIQUE'});
+
         await queryInterface.createTable('GuildSettings', {
             id: {
                 allowNull: false,
@@ -60,8 +63,40 @@ const migration: Migration = {
             }
         });
 
-        //await queryInterface.addIndex('Guilds', ['snowflake'], {type: 'UNIQUE'});
-        await queryInterface.addIndex('Guilds', ['id', 'name'], {type: 'UNIQUE'});
+        await queryInterface.createTable('SpecialRoles', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER
+            },
+            roleType: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: false
+            },
+            discordRoleName: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: false
+            },
+            discordRoleId: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: false
+            },
+            guildId: {
+                type: Sequelize.STRING
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            }
+        });
 
         await queryInterface.createTable('Users', {
             id: {

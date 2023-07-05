@@ -17,8 +17,12 @@ import {
 import {User} from "./user.js";
 import {GuildSetting} from "./GuildSetting.js";
 import {valToString} from "../../../utils/index.js";
+import {SpecialRole} from "./SpecialRole.js";
+import {SpecialRoleType} from "../../infrastructure/Atomic.js";
 
-export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'settings' }>, InferCreationAttributes<Guild>> {
+export class Guild extends Model<InferAttributes<Guild, {
+    omit: 'users' | 'settings'
+}>, InferCreationAttributes<Guild>> {
 
     declare id: string;
     declare name: string
@@ -33,12 +37,18 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
     declare addSetting: HasManyAddAssociationMixin<GuildSetting, number>;
     declare createSetting: HasManyCreateAssociationMixin<GuildSetting>;
 
+    declare getRoles: HasManyGetAssociationsMixin<SpecialRole>;
+    declare createRole: HasManyCreateAssociationMixin<SpecialRole>;
+    declare removeRole: HasManyRemoveAssociationMixin<SpecialRole, number>;
+
     declare users?: NonAttribute<User[]>;
     declare settings?: NonAttribute<GuildSetting[]>
+    declare roles?: NonAttribute<SpecialRole>[]
 
     declare static associations: {
-        users: Association<Guild, User>;
+        users: Association<Guild, User>
         settings: Association<Guild, GuildSetting>
+        roles: Association<Guild, SpecialRole>
     };
 
     getSetting = async (name: string): Promise<(GuildSetting | undefined)> => {
@@ -66,7 +76,7 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
         // look for existing
         const existing = await this.getSetting(name);
         if (existing !== undefined) {
-            if(overwrite) {
+            if (overwrite) {
                 existing.value = valToString(value);
                 await this.addSetting(existing);
                 await existing.save();
@@ -74,12 +84,37 @@ export class Guild extends Model<InferAttributes<Guild, { omit: 'users' | 'setti
             return existing;
         } else {
             return await this.createSetting({
-               // guildId: this.id,
+                // guildId: this.id,
                 type: typeof value,
                 name,
                 value: valToString(value)
             });
         }
+    }
+
+    getRolesByType = async (roleType: SpecialRoleType) => {
+        const roles = await this.getRoles();
+        return roles.filter(x => x.roleType === roleType);
+    }
+
+    getRoleNamesByType = async (roleType: SpecialRoleType) => {
+        const roles = await this.getRolesByType(roleType);
+        return roles.map(x => x.discordRoleName);
+    }
+
+    getRoleIdsByType = async (roleType: SpecialRoleType) => {
+        const roles = await this.getRolesByType(roleType);
+        return roles.map(x => x.discordRoleId);
+    }
+
+    getRoleById = async (id: string): Promise<SpecialRole | undefined> => {
+        const roles = await this.getRoles();
+        return roles.find(x => x.discordRoleId === id);
+    }
+
+    getRoleByName = async (name: string): Promise<SpecialRole | undefined> => {
+        const roles = await this.getRoles();
+        return roles.find(x => x.discordRoleName === name);
     }
 }
 
@@ -108,5 +143,10 @@ export const associate = () => {
         foreignKey: 'guildId',
         sourceKey: 'id',
         as: 'settings'
+    });
+    Guild.hasMany(SpecialRole, {
+        foreignKey: 'guildId',
+        sourceKey: 'id',
+        as: 'roles'
     });
 }
