@@ -77,7 +77,7 @@ export class Bot {
                     this.logger.error(err);
                 }
             )
-            const job = new SimpleIntervalJob({ seconds: 30, }, task)
+            const job = new SimpleIntervalJob({ minutes: 5, }, task)
             scheduler.addSimpleIntervalJob(job);
 
             this.logger.info('Scheduler started.');
