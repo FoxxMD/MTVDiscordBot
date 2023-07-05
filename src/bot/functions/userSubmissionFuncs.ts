@@ -12,6 +12,8 @@ import {
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {durationToHuman, formatNumber} from "../../utils/StringUtils.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
+import {memberHasRoleType} from "./userUtil.js";
+import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
@@ -70,7 +72,27 @@ export const checkSelfPromotion = async (interaction: InteractionLike, platform:
             content: oneLine`
             ${formatNumber(percent, {toFixed: 0})}% of your submissions are from the creator ${creator.name}
             which is above the allowed limit of 20% and considered self-promotion. Please submit videos from a variety of sources.
-            `
+            `,
+            ephemeral: true
+        });
+    }
+}
+
+export const checkAge = async (interaction: InteractionLike, user: User) => {
+    const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
+    if(hasAllowedRole) {
+        return;
+    }
+    const userCreated = dayjs(user.createdAt);
+    const waitingPeriodOver = userCreated.add(24, 'hours');
+
+    if(waitingPeriodOver.isAfter(dayjs())) {
+        await interaction.reply({
+            content: oneLine`
+            In order to prevent spam new users must wait 24 hours after first interaction before they can submit videos.
+            You may start submitting videos ${time(waitingPeriodOver.toDate(), 'R')}
+            `,
+            ephemeral: true
         });
     }
 }

@@ -40,7 +40,6 @@ export class Creator extends Model<InferAttributes<Creator, {
         videos: Association<Creator, Video>;
         users: Association<Creator, User>
     };
-
     populateFromDetails = (details: FullCreatorDetails) => {
         this.name = details.name;
         this.platformCreatedAt = details.createdAt;

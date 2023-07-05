@@ -17,7 +17,12 @@ import {timestampToDuration} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
 import {MinimalCreatorDetails, MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
-import {checkLengthConstraints, checkSelfPromotion, rateLimitUser} from "../../../bot/functions/userSubmissionFuncs.js";
+import {
+    checkAge,
+    checkLengthConstraints,
+    checkSelfPromotion,
+    rateLimitUser
+} from "../../../bot/functions/userSubmissionFuncs.js";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 import {memberHasRoleType} from "../../../bot/functions/userUtil.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
@@ -32,12 +37,19 @@ module.exports = {
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
         const user = await getOrInsertUser(interaction.member, interaction.guild, bot.db);
+        const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
+
+        await checkAge(interaction, user);
+        if (interaction.replied) {
+            return;
+        }
+
         const guild = await user.getGuild();
         const limited = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
 
-        if(limited) {
+        if (limited) {
             await rateLimitUser(interaction, user);
-            if(interaction.replied) {
+            if (interaction.replied) {
                 return;
             }
         }
@@ -48,7 +60,7 @@ module.exports = {
 
         const deets = await manager.getVideoDetails(url);
 
-       const existingVideo = await getVideoByVideoId(deets.id, deets.platform);
+        const existingVideo = await getVideoByVideoId(deets.id, deets.platform);
         if (existingVideo !== undefined) {
             const isValidToSubmit = await existingVideo.validForSubmission();
             if (!isValidToSubmit) {
@@ -64,15 +76,14 @@ module.exports = {
         }
 
         // can ignore self-promo if user is allowed
-        const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
-        if(!hasAllowedRole && deets.creator.id !== undefined) {
+        if (!hasAllowedRole && deets.creator.id !== undefined) {
             // now check creator popularity (gated by allow role check to reduce platform api calls)
             const popular = manager.checkPopularity(deets.platform, deets.creator as MinimalCreatorDetails);
-            if(!popular) {
+            if (!popular) {
                 // either cannot get popularity from platform (api unsupported) or creator is not popular
                 // so check for self-promo
                 await checkSelfPromotion(interaction, deets.platform, deets.creator as MinimalCreatorDetails, user);
-                if(interaction.replied) {
+                if (interaction.replied) {
                     return;
                 }
             }
@@ -80,7 +91,7 @@ module.exports = {
 
         if (deets.duration !== undefined && deets.title !== undefined) {
             await checkLengthConstraints(deets.duration, interaction, user);
-            if(interaction.replied) {
+            if (interaction.replied) {
                 return;
             }
             await addFirehoseVideo(interaction, deets as MinimalVideoDetails, user);
@@ -125,7 +136,7 @@ module.exports = {
                     }
                 }
                 await checkLengthConstraints(deets.duration, modalRes, user);
-                if(interaction.replied) {
+                if (interaction.replied) {
                     return;
                 }
                 await addFirehoseVideo(modalRes, deets as MinimalVideoDetails, user);

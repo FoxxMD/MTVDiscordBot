@@ -1,6 +1,6 @@
 import {User} from "../../common/db/models/user.js";
 import {submissionInGoodStanding} from "./index.js";
-import {EmbedBuilder, GuildMember} from "discord.js";
+import {EmbedBuilder, GuildMember, GuildMemberRoleManager} from "discord.js";
 import dayjs from "dayjs";
 import {InteractionLike, SpecialRoleType} from "../../common/infrastructure/Atomic.js";
 import {getOrInsertGuild} from "./repository.js";
@@ -46,7 +46,7 @@ export const buildStandingProfile = async (user: User) => {
 
 export const memberHasRoleType = async (roleType: SpecialRoleType, interaction: InteractionLike) => {
     const guild = await getOrInsertGuild(interaction.guild);
-    const roles = interaction.member.roles as string[];
+    const roles = (interaction.member.roles as GuildMemberRoleManager).cache.map(x => x.id);
 
     const specialRoles = await guild.getRoleIdsByType(roleType);
 
