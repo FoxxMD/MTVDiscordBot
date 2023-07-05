@@ -96,3 +96,20 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
         });
     }
 }
+
+export const checkRules = async (interaction: InteractionLike, user: User) => {
+    const ruleRoleExists = (await user.guild.getRoleIdsByType(ROLE_TYPES.TOS)).length > 0;
+    if(!ruleRoleExists) {
+        return;
+    }
+
+    const hasRuleReadRole = await memberHasRoleType(ROLE_TYPES.TOS, interaction);
+    if(!hasRuleReadRole) {
+        await interaction.reply({
+            content: oneLine`
+            You must **agree to the server rules** before you can submit a video.
+            `,
+            ephemeral: true
+        });
+    }
+}

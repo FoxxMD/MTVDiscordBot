@@ -36,6 +36,9 @@ module.exports = {
                             },
                             {
                                 name: 'Janitor', value: 'janitor'
+                            },
+                            {
+                                name: 'Read TOS', value: 'tos'
                             }))
         )
         .addSubcommand(subCommand =>
@@ -92,6 +95,7 @@ module.exports = {
             case 'display':
                 const approvedRoles = await guild.getRolesByType(ROLE_TYPES.APPROVED);
                 const janitorRoles = await guild.getRolesByType(ROLE_TYPES.JANITOR);
+                const tosRoles = await guild.getRolesByType(ROLE_TYPES.TOS);
 
                 const approvedContent = approvedRoles.length === 0 ? 'No associated roles.' : markdownTag`
                 ${approvedRoles.map(x => roleMention(x.discordRoleId))}
@@ -100,6 +104,11 @@ module.exports = {
                 const janitorContent = janitorRoles.length === 0 ? 'No associated roles.' : markdownTag
                     `
                 ${janitorRoles.map(x => roleMention(x.discordRoleId))}
+                `;
+
+                const tosContent = tosRoles.length === 0 ? 'No associated roles (users not required to read rules before submitting)' : markdownTag
+                    `
+                ${tosRoles.map(x => roleMention(x.discordRoleId))}
                 `;
 
                 await interaction.reply({
@@ -111,6 +120,10 @@ module.exports = {
                     **Janitor**
                     
                     ${janitorContent}
+                    
+                    **Read TOS**
+                    
+                    ${tosContent}
                     `,
                     ephemeral: true
                 });

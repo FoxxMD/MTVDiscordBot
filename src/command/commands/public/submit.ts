@@ -19,7 +19,7 @@ import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
 import {MinimalCreatorDetails, MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
 import {
     checkAge,
-    checkLengthConstraints,
+    checkLengthConstraints, checkRules,
     checkSelfPromotion,
     rateLimitUser
 } from "../../../bot/functions/userSubmissionFuncs.js";
@@ -39,6 +39,10 @@ module.exports = {
         const user = await getOrInsertUser(interaction.member, interaction.guild, bot.db);
         const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
 
+        await checkRules(interaction, user);
+        if (interaction.replied) {
+            return;
+        }
         await checkAge(interaction, user);
         if (interaction.replied) {
             return;
