@@ -59,5 +59,6 @@ export const associate = () => {
 
 export const ROLE_TYPES = {
   APPROVED: 'approved' as SpecialRoleType,
-  JANITOR: 'janitor' as SpecialRoleType
+  JANITOR: 'janitor' as SpecialRoleType,
+  TOS: 'tos' as SpecialRoleType
 }

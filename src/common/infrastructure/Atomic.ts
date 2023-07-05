@@ -55,6 +55,7 @@ export interface LogInfo {
 }
 
 export const staffRoleKeywords = ['moderation', 'admin'];
+export const approvedRoleKeywords = ['approved', 'trusted'];
 
 export type Platform = 'youtube' | 'vimeo' | string;
 
@@ -102,7 +103,7 @@ export interface RegExResult {
 
 export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>;
 
-export type SpecialRoleType = 'approved' | 'janitor';
+export type SpecialRoleType = 'approved' | 'janitor' | 'tos';
 
 export interface numberFormatOptions {
     toFixed: number,

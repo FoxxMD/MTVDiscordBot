@@ -46,11 +46,7 @@ export const getOrInsertGuild = async (dguild: DiscordGuild, logger?: Logger) =>
             if (logger !== undefined) {
                 logger.verbose(`Created Guild ${dguild.name} (${dguild.id}) with ID ${guild.id}`);
             }
-            await populateGuildDefaults(guild, dguild);
-        } else {
-            if (logger !== undefined) {
-                logger.verbose(`Existing Guild ${dguild.name} (${dguild.id}) with ID ${guild.id}`);
-            }
+            await populateGuildDefaults(guild, dguild, logger);
         }
         return guild;
     } catch (e) {
