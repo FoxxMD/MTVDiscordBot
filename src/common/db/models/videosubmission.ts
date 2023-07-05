@@ -47,6 +47,22 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
   getDiscordMessageLink = () => {
     return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
   }
+
+  isOC = async () => {
+    const user = await this.getUser();
+    const creator = await (await this.getVideo()).getCreator();
+    if (creator === undefined) {
+      return false;
+    }
+    const userCreators = await creator.getUsers();
+    if (userCreators.length === 0) {
+      return false;
+    }
+    if (userCreators.some(x => x.id === user.id)) {
+      return true;
+    }
+    return false;
+  }
 }
 
 

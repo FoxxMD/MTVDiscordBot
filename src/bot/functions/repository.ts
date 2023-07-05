@@ -22,7 +22,8 @@ export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildM
             const guild = await getOrInsertGuild(dguild);
             user = await User.create({
                 name: member.user.username,
-                guildId: guild.id
+                guildId: guild.id,
+                discordId: member.user.id,
             });
             await user.createTrustLevel({
                 trustLevelId: 1

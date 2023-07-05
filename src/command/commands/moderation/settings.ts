@@ -1,4 +1,11 @@
-import {CacheType, ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits} from "discord.js";
+import {
+    CacheType,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    ChannelType,
+    CategoryChannel
+} from "discord.js";
 import {getOrInsertGuild} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
@@ -37,6 +44,24 @@ module.exports = {
                 .addBooleanOption(opt =>
                     opt.setName('limiting')
                         .setDescription('Set limiting mode')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('category-showcase')
+                .setDescription('Display or set Showcase Channel Category')
+                .addChannelOption(opt =>
+                    opt.setName('name')
+                        .addChannelTypes(ChannelType.GuildCategory)
+                        .setDescription('Set category for non-oc videos')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('category-oc')
+                .setDescription('Display or set OC Channel Category')
+                .addChannelOption(opt =>
+                    opt.setName('name')
+                        .addChannelTypes(ChannelType.GuildCategory)
+                        .setDescription('Set category for OC videos')
                         .setRequired(false))
         )
     ,
@@ -79,6 +104,36 @@ module.exports = {
                 } else {
                     await guild.upsertSetting(GuildSettings.RATE_LIMIT_MODE, limit, true);
                     await interaction.reply({content: `Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
+                }
+                break;
+            case 'category-showcase':
+                const showcaseCategoryChannel = interaction.options.getChannel('name') as CategoryChannel | undefined;
+                if(showcaseCategoryChannel === undefined) {
+                    const showcaseChannel = await guild.getSettingValue<string>(GuildSettings.CATEGORY_SHOWCASE);
+                    let val = 'None Set';
+                    if(showcaseChannel !== undefined) {
+                        const channel = interaction.guild.channels.resolve(showcaseChannel);
+                        val = channel.name;
+                    }
+                    await interaction.reply({content: val});
+                } else {
+                    await guild.upsertSetting(GuildSettings.CATEGORY_SHOWCASE, showcaseCategoryChannel.id, true);
+                    await interaction.reply({content: `Set Showcase Category => ${showcaseCategoryChannel.name}`});
+                }
+                break;
+            case 'category-oc':
+                const ocCategoryChannel = interaction.options.getChannel('name') as CategoryChannel | undefined;
+                if(ocCategoryChannel === undefined) {
+                    const ocChannel = await guild.getSettingValue<string>(GuildSettings.CATEGORY_OC);
+                    let val = 'None Set';
+                    if(ocChannel !== undefined) {
+                        const channel = interaction.guild.channels.resolve(ocChannel);
+                        val = channel.name;
+                    }
+                    await interaction.reply({content: val});
+                } else {
+                    await guild.upsertSetting(GuildSettings.CATEGORY_OC, ocCategoryChannel.id, true);
+                    await interaction.reply({content: `Set OC Category => ${ocCategoryChannel.name}`});
                 }
                 break;
             default:

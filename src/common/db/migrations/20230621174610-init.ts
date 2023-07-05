@@ -105,6 +105,9 @@ const migration: Migration = {
                 primaryKey: true,
                 type: Sequelize.INTEGER
             },
+            discordId: {
+                type: Sequelize.STRING
+            },
             guildId: {
                 type: Sequelize.STRING
             },
@@ -269,6 +272,9 @@ const migration: Migration = {
                 type: Sequelize.INTEGER.UNSIGNED
             },
             messageId: {
+                type: Sequelize.STRING
+            },
+            channelId: {
                 type: Sequelize.STRING
             },
             videoId: {

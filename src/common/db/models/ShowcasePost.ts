@@ -16,6 +16,7 @@ export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCrea
 
   declare id: CreationOptional<number>;
   declare messageId: string;
+  declare channelId: string;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
@@ -44,6 +45,7 @@ export const init = (sequelize: Sequelize) => {
       autoIncrement: true,
       primaryKey: true
     },
+    channelId: DataTypes.STRING,
     messageId: DataTypes.STRING,
     guildId: DataTypes.STRING,
     videoId: DataTypes.INTEGER,

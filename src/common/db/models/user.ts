@@ -30,6 +30,7 @@ export class User extends Model<InferAttributes<User, {
 
     declare id: CreationOptional<number>;
     declare name: string;
+    declare discordId: string;
     declare guildId: ForeignKey<Guild['id']>;
 
     declare createdAt: CreationOptional<Date>;
@@ -92,6 +93,7 @@ export const init = (sequelize: Sequelize) => {
             allowNull: false,
             unique: true
         },
+        discordId: DataTypes.STRING,
         guildId: DataTypes.STRING,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

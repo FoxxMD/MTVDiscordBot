@@ -15,7 +15,7 @@ import {Bot} from "../../../bot/Bot.js";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
 import {timestampToDuration} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
-import {addFirehoseVideo} from "../../../bot/functions/addFirehoseVideo.js";
+import {addFirehoseVideo} from "../../../bot/functions/firehose.js";
 import {MinimalCreatorDetails, MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
 import {
     checkAge,

@@ -2,7 +2,9 @@ export const GuildSettings = {
     SUBMISSION_CHANNEL: 'submissionChannel',
     MIN_SECONDS: 'minimumSeconds',
     MAX_SECONDS: 'maxSeconds',
-    RATE_LIMIT_MODE: 'rateLimitingMode'
+    RATE_LIMIT_MODE: 'rateLimitingMode',
+    CATEGORY_SHOWCASE: 'categoryShowcase',
+    CATEGORY_OC: 'categoryOc',
 };
 
 export const GuildSettingDefaults = {
