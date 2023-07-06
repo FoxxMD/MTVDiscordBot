@@ -1,8 +1,8 @@
 import {User} from "../../common/db/models/user.js";
-import {CacheType, ChatInputCommandInteraction, time} from "discord.js";
+import {CacheType, ChatInputCommandInteraction, GuildMember, time} from "discord.js";
 import {oneLine} from 'common-tags';
 import {getCreatorByDetails, getUserLastSubmittedVideo} from "./repository.js";
-import dayjs from "dayjs";
+import dayjs, {Dayjs} from "dayjs";
 import {
     InteractionLike,
     MinimalCreatorDetails,
@@ -83,8 +83,13 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
     if(hasAllowedRole) {
         return;
     }
-    const userCreated = dayjs(user.createdAt);
-    const waitingPeriodOver = userCreated.add(24, 'hours');
+    let joined: Dayjs;
+    if('joinedAt' in interaction.member) {
+        joined = dayjs(interaction.member.joinedAt);
+    } else {
+        joined = dayjs(user.createdAt);
+    }
+    const waitingPeriodOver = joined.add(24, 'hours');
 
     if(waitingPeriodOver.isAfter(dayjs())) {
         await interaction.reply({
@@ -98,14 +103,17 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
 }
 
 export const checkRules = async (interaction: InteractionLike, user: User) => {
-    const ruleRoles = await ((await user.getGuild()).getRoleIdsByType(ROLE_TYPES.TOS));
-    const ruleRoleExists = ruleRoles.length > 0
-    if(!ruleRoleExists) {
-        return;
+    let hasReadRules = true;
+    if(interaction.member.pending) {
+        hasReadRules = false;
+    } else {
+        const ruleRoles = await ((await user.getGuild()).getRoleIdsByType(ROLE_TYPES.TOS));
+        const ruleRoleExists = ruleRoles.length > 0;
+        if(ruleRoleExists) {
+            hasReadRules = await memberHasRoleType(ROLE_TYPES.TOS, interaction);
+        }
     }
-
-    const hasRuleReadRole = await memberHasRoleType(ROLE_TYPES.TOS, interaction);
-    if(!hasRuleReadRole) {
+    if(!hasReadRules) {
         await interaction.reply({
             content: oneLine`
             You must **agree to the server rules** before you can submit a video.

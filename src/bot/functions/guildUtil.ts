@@ -32,19 +32,6 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
         }
     }
 
-    // rule reader
-    const tosRole = await guild.getRoleIdsByType(ROLE_TYPES.TOS);
-    if(approvedRoles.length === 0) {
-        const defaultRole = discordRoles.find(x => x.name.toLowerCase() === 'meal enjoyer');
-        if(defaultRole !== undefined) {
-            await guild.createRole({
-                roleType: ROLE_TYPES.TOS,
-                discordRoleId: defaultRole.id,
-                discordRoleName: defaultRole.name,
-            });
-        }
-    }
-
     // default categories
     const showcaseCat = channels.find(x => x instanceof CategoryChannel && x.name.toLowerCase().includes('videos [x-x'));
     if(showcaseCat !== undefined) {

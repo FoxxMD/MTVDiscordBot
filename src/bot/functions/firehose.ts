@@ -57,6 +57,8 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
 
+        await interaction.reply({content: `Video Submitted! ${submissionMessage.url}`, ephemeral: true});
+
         await submissionMessage.react(VideoReactions.UP);
         await submissionMessage.react(VideoReactions.DOWN);
         await submissionMessage.react(VideoReactions.REPORT);
@@ -71,8 +73,6 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
             downvotes: 0,
             active: true
         });
-
-        await interaction.reply({content: `Video Submitted! ${submissionMessage.url}`, ephemeral: true});
     } catch (e) {
         throw e;
     }

@@ -11,7 +11,7 @@ import {SimpleError} from "../../utils/Errors.js";
 import {Creator} from "../../common/db/models/creator.js";
 import {populateGuildDefaults} from "./guildUtil.js";
 
-export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild, db: Sequelize) => {
+export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild) => {
     // TODO reduce eager loading
     try {
         let user = await User.findOne({
@@ -134,7 +134,7 @@ export const getCreatorByDetails = async (platform: string, details: CreatorDeta
         }
     });
     if (creators.length > 0) {
-        return creators[1];
+        return creators[0];
     }
     return undefined;
 }

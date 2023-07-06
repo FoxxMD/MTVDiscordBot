@@ -36,7 +36,7 @@ module.exports = {
             .setRequired(true)),
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
 
-        const user = await getOrInsertUser(interaction.member, interaction.guild, bot.db);
+        const user = await getOrInsertUser(interaction.member, interaction.guild);
         const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
 
         await checkRules(interaction, user);

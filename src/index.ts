@@ -43,7 +43,7 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.MessageContent,
                 GatewayIntentBits.GuildMessageReactions,
-                //GatewayIntentBits.GuildMembers,
+                GatewayIntentBits.GuildMembers,
                 GatewayIntentBits.GuildMessages,
                 //GatewayIntentBits.GuildModeration
             ]
