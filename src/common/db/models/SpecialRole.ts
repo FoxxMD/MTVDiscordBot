@@ -60,5 +60,6 @@ export const associate = () => {
 export const ROLE_TYPES = {
   APPROVED: 'approved' as SpecialRoleType,
   JANITOR: 'janitor' as SpecialRoleType,
-  TOS: 'tos' as SpecialRoleType
+  TOS: 'tos' as SpecialRoleType,
+  CONTENT_CREATOR: 'contentCreator' as SpecialRoleType
 }

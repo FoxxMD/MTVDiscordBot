@@ -5,6 +5,7 @@ import {intersect} from "../../utils/index.js";
 import {approvedRoleKeywords} from "../../common/infrastructure/Atomic.js";
 import {Logger} from "@foxxmd/winston";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
+import {SimpleError} from "../../utils/Errors.js";
 
 export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuild, logger: Logger) => {
 
@@ -28,6 +29,19 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
                 roleType: ROLE_TYPES.APPROVED,
                 discordRoleId: defaultApprovedRole.id,
                 discordRoleName: defaultApprovedRole.name,
+            });
+        }
+    }
+
+    // content creator
+    const ccRole = await guild.getRoleIdsByType(ROLE_TYPES.CONTENT_CREATOR);
+    if(ccRole.length === 0) {
+        const defaultCCRole = discordRoles.find(x => x.name.toLowerCase() === 'content creator');
+        if(defaultCCRole !== undefined) {
+            await guild.createRole({
+                roleType: ROLE_TYPES.CONTENT_CREATOR,
+                discordRoleId: defaultCCRole.id,
+                discordRoleName: defaultCCRole.name,
             });
         }
     }
@@ -62,4 +76,21 @@ export const getShowcaseChannelFromCategory = async (cat: CategoryChannel, durat
             return x;
         }
     });
+}
+
+export const getContentCreatorRole = async (guild: Guild) => {
+    const ccRoles = await guild.getRolesByType(ROLE_TYPES.CONTENT_CREATOR);
+    if(ccRoles.length === 0) {
+        throw new SimpleError('No Discord role is associated with the Content Creator role type');
+    }
+    return ccRoles[0];
+}
+
+export const getContentCreatorDiscordRole = async (guild: Guild, dguild: DiscordGuild) => {
+    const specialRole = await getContentCreatorRole(guild);
+    const ccRole = await dguild.roles.fetch(specialRole.discordRoleId);
+    if(ccRole === undefined) {
+        throw new SimpleError(`Content Creator role type references a Discord Role ID ${specialRole.discordRoleId} that does not exist`);
+    }
+    return ccRole;
 }

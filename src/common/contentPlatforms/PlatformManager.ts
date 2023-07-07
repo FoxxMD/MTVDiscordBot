@@ -103,4 +103,16 @@ export class PlatformManager {
         return creator.popular;
     }
 
+    async upsertCreatorFromDetails(platform: string, details: MinimalCreatorDetails) {
+        const creator = await upsertVideoCreator(platform, details);
+        if (!ApiSupportedPlatforms.includes(platform)) {
+            // nothing we can do about this
+            return creator;
+        }
+        let channelDetails = await this.getChannelDetails(platform, details.id);
+        creator.populateFromDetails(channelDetails);
+        await creator.save();
+        return creator;
+    }
+
 }

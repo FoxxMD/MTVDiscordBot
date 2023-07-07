@@ -16,7 +16,7 @@ import {
     BelongsToManyGetAssociationsMixin,
     HasOneCreateAssociationMixin,
     HasOneGetAssociationMixin,
-    HasOneSetAssociationMixin, ForeignKey, BelongsToGetAssociationMixin
+    HasOneSetAssociationMixin, ForeignKey, BelongsToGetAssociationMixin, BelongsToManyRemoveAssociationMixin
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
@@ -43,6 +43,7 @@ export class User extends Model<InferAttributes<User, {
 
     declare createCreator: BelongsToManyCreateAssociationMixin<Creator>;
     declare addCreator: BelongsToManyAddAssociationMixin<Creator, 'CreatorId'>;
+    declare removeCreator: BelongsToManyRemoveAssociationMixin<Creator, 'CreatorId'>;
     declare getCreators: BelongsToManyGetAssociationsMixin<Creator>;
 
     declare getTrustLevel: HasOneGetAssociationMixin<UserTrustLevel>;

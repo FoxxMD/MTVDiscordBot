@@ -14,6 +14,7 @@ import {capitalize} from "../../../utils/index.js";
 import {markdownTag} from "../../../utils/StringUtils.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {stripIndent} from "common-tags";
+import * as repl from "repl";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,7 +23,7 @@ module.exports = {
         .setDescription('Display or edit associated roles for MTV Bot')
         .addSubcommand(subCommand =>
             subCommand.setName('add')
-                .setDescription('Add an existing role as approved/janitor')
+                .setDescription('Associate an existing role')
                 .addRoleOption(opt =>
                     opt.setName('role')
                         .setDescription('Role to add')
@@ -43,11 +44,26 @@ module.exports = {
         )
         .addSubcommand(subCommand =>
             subCommand.setName('remove')
-                .setDescription('Remove existing role from approved/janitor')
+                .setDescription('Remove existing role')
                 .addRoleOption(opt =>
                     opt.setName('role')
                         .setDescription('Role to remove')
                         .setRequired(true))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('set')
+                .setDescription('Set singular role association')
+                .addRoleOption(opt =>
+                    opt.setName('role')
+                        .setDescription('Role to associate')
+                        .setRequired(true))
+                .addStringOption(opt =>
+                    opt.setName('type')
+                        .setDescription('Type to associate as')
+                        .setRequired(true)
+                        .addChoices({
+                            name: 'Content Creator', value: 'contentCreator'
+                        }))
         )
         .addSubcommand(subCommand =>
             subCommand.setName('display')
@@ -92,10 +108,32 @@ module.exports = {
                 }
                 await guild.removeRole(existingRole);
                 break;
+            case 'set':
+                const roleToAssociate = interaction.options.getRole('role');
+                const singularRoleType = interaction.options.getString('type') as SpecialRoleType;
+
+                const existingSingularRole = await guild.getRolesByType(singularRoleType);
+                const replyParts: string[] = [];
+                if(existingSingularRole.length > 0) {
+                    replyParts.push(`Removed existing association with role ${existingSingularRole[0].discordRoleName} and`);
+                    await guild.removeRole(existingSingularRole[0]);
+                }
+                await guild.createRole({
+                    roleType: singularRoleType,
+                    discordRoleName: roleToAssociate.name,
+                    discordRoleId: roleToAssociate.id
+                });
+                replyParts.push(`Added ${roleToAssociate.name} as ${singularRoleType}`);
+                await interaction.reply({
+                    content: replyParts.join(''),
+                    ephemeral: true
+                });
+                break;
             case 'display':
                 const approvedRoles = await guild.getRolesByType(ROLE_TYPES.APPROVED);
                 const janitorRoles = await guild.getRolesByType(ROLE_TYPES.JANITOR);
                 const tosRoles = await guild.getRolesByType(ROLE_TYPES.TOS);
+                const contentCreatorRole = await guild.getRolesByType(ROLE_TYPES.CONTENT_CREATOR);
 
                 const approvedContent = approvedRoles.length === 0 ? 'No associated roles.' : markdownTag`
                 ${approvedRoles.map(x => roleMention(x.discordRoleId))}
@@ -111,6 +149,11 @@ module.exports = {
                 ${tosRoles.map(x => roleMention(x.discordRoleId))}
                 `;
 
+                const ccContent = contentCreatorRole.length === 0 ? 'No associated roles' : markdownTag
+                    `
+                ${contentCreatorRole.map(x => roleMention(x.discordRoleId))}
+                `;
+
                 await interaction.reply({
                     content: stripIndent`
                     **Approved**
@@ -120,6 +163,10 @@ module.exports = {
                     **Janitor**
                     
                     ${janitorContent}
+                    
+                    **Content Creator**
+                    
+                    ${ccContent}
                     
                     **Read TOS**
                     
