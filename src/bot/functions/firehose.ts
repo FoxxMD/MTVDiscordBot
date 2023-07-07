@@ -103,10 +103,14 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
 
     flogger.verbose(`Found ${activeSubmissions.length} active Video Submissions`);
 
+    const ownId = dguild.client.user.id;
+
     if (activeSubmissions.length > 0) {
         for (const asub of activeSubmissions) {
 
             const logger = flogger.child({labels: [`Sub ${asub.id}`]});
+
+            const submitter = await asub.getUser();
 
             const channel = await dguild.channels.fetch(asub.channelId) as TextChannel;
             let message: Message;
@@ -123,12 +127,22 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
             }
 
             const up = message.reactions.resolve(VideoReactions.UP);
+            const upUsers = await up.users.fetch();
+
             const down = message.reactions.resolve(VideoReactions.DOWN);
+            const downUsers = await down.users.fetch();
+
             const report = message.reactions.resolve(VideoReactions.REPORT);
 
-            // decrease by one to remove bot react
-            asub.upvotes = up.count - 1;
-            asub.downvotes = down.count - 1;
+            // ignore bot and submitter reacts
+            asub.upvotes = upUsers.filter((user, key) => {
+                return key !== ownId && key !== submitter.discordId;
+            }).size;
+            asub.downvotes = downUsers.filter((user, key) => {
+                return key !== ownId && key !== submitter.discordId;
+            }).size;
+
+
             // TODO report
 
             await asub.save();
