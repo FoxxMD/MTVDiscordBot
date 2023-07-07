@@ -13,10 +13,14 @@ import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/reposit
 import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
-import {timestampToDuration} from "../../../utils/StringUtils.js";
+import {markdownTag, timestampToDuration} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/firehose.js";
-import {MinimalCreatorDetails, MinimalVideoDetails} from "../../../common/infrastructure/Atomic.js";
+import {
+    AllowedVideoProviders,
+    MinimalCreatorDetails,
+    MinimalVideoDetails
+} from "../../../common/infrastructure/Atomic.js";
 import {
     checkAge,
     checkLengthConstraints, checkRules,
@@ -63,6 +67,19 @@ module.exports = {
         const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
         const deets = await manager.getVideoDetails(url);
+
+        if(!AllowedVideoProviders.includes(deets.platform)) {
+            return await interaction.reply(
+                {
+                    content: markdownTag`
+                    The video platform for this link is either not recognized or not supported at this time. Supported platforms:
+                    ${AllowedVideoProviders}
+                    
+                    If you believe this domain should be allowed please open a ticket in #support`,
+                    ephemeral: true
+                }
+            )
+        }
 
         const existingVideo = await getVideoByVideoId(deets.id, deets.platform);
         if (existingVideo !== undefined) {

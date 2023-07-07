@@ -3,6 +3,7 @@ import {numberFormatOptions, RegExResult} from "../common/infrastructure/Atomic.
 import {SimpleError} from "./Errors.js";
 import dayjs from "dayjs";
 import {TemplateTag, stripIndentTransformer, TemplateTransformer, trimResultTransformer} from 'common-tags'
+import normalizeUrl from "normalize-url";
 
 export const parseRegex = (reg: RegExp, val: string): RegExResult[] | undefined => {
 
@@ -145,7 +146,7 @@ const markdownListTransformer: TemplateTransformer = {
 
 export const markdownTag = new TemplateTag(
     markdownListTransformer,
-    stripIndentTransformer('initial'),
+    stripIndentTransformer('all'),
     trimResultTransformer()
 );
 
@@ -194,4 +195,9 @@ export const truncateStringToLength = (length: any, truncStr = '...') => (val: a
     }
     const str = typeof val !== 'string' ? val.toString() : val;
     return str.length > length ? `${str.slice(0, length)}${truncStr}` : str;
+}
+
+export const parseUrl = (url: string) => {
+    const normalized = normalizeUrl(url, {removeTrailingSlash: true, normalizeProtocol: true, forceHttps: true});
+    return new URL(normalized);
 }

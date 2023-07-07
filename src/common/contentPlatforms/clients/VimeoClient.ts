@@ -43,7 +43,7 @@ export class VimeoClient {
             return {
                 id: videoId,
                 platform: 'vimeo',
-                url: resp.body.link,
+                url: new URL(resp.body.link),
                 nsfw: resp.body.content_rating_class !== 'safe',
                 title: resp.body.name,
                 creator: {

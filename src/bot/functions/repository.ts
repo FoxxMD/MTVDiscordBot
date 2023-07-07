@@ -80,7 +80,7 @@ export const getOrInsertVideo = async (details: MinimalVideoDetails) => {
         platform: details.platform,
         platformId: details.id,
         title: details.title,
-        url: details.url,
+        url: details.url.toString(),
         length: details.duration,
         nsfw: details.nsfw ?? false
     });

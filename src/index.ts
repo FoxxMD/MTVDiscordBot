@@ -54,9 +54,6 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
 
         const bot = new Bot(client, db, logger, config);
         bot.init(logger);
-
-        //await pEvent(client, 'NEVER');
-        const f = 1;
     } catch (e) {
         logger.error('Exited with uncaught error');
         logger.error(e);

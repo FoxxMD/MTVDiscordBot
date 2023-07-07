@@ -51,7 +51,7 @@ export class YoutubeClient {
             return {
                 id: videoId,
                 platform: 'youtube',
-                url: `https://www.youtube.com/watch?v=${videoId}`,
+                url: new URL(`https://www.youtube.com/watch?v=${videoId}`),
                 nsfw: video.contentDetails.contentRating?.ytRating === 'ytAgeRestricted',
                 title: video.snippet.title,
                 creator: {

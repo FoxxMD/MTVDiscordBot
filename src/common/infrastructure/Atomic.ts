@@ -57,9 +57,11 @@ export interface LogInfo {
 export const staffRoleKeywords = ['moderation', 'admin'];
 export const approvedRoleKeywords = ['approved', 'trusted'];
 
-export type Platform = 'youtube' | 'vimeo' | string;
+export type Platform = 'youtube' | 'vimeo' | 'ted' | 'twitch' | 'facebook' | 'dailymotion' | 'unknown' | string;
 
 export const ApiSupportedPlatforms: Platform[] = ['youtube', 'vimeo'];
+
+export const AllowedVideoProviders: Platform[] = ['youtube', 'vimeo', 'ted', 'twitch', 'facebook', 'dailymotion'];
 
 export interface CreatorDetails {
     id?: string
@@ -78,7 +80,7 @@ export interface VideoDetails {
     duration?: number,
     id: string
     platform: Platform
-    url: string
+    url: URL
     nsfw?: boolean
     title?: string
     creator?: CreatorDetails

@@ -3,15 +3,16 @@ import {YoutubeClient} from "./clients/YoutubeClient.js";
 import {
     ApiSupportedPlatforms,
     FullCreatorDetails,
-    MinimalCreatorDetails,
+    MinimalCreatorDetails, Platform,
     VideoDetails
 } from "../infrastructure/Atomic.js";
 import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../../utils/index.js";
 import {ErrorWithCause} from "pony-cause";
-import urlParser from "js-video-url-parser";
+import {urlParser} from './UrlParser.js';
 import {VimeoClient} from "./clients/VimeoClient.js";
 import {getCreatorByDetails, upsertVideoCreator} from "../../bot/functions/repository.js";
+import {parseUrl} from "../../utils/StringUtils.js";
 
 export class PlatformManager {
 
@@ -33,19 +34,20 @@ export class PlatformManager {
         }
     }
 
-    async getVideoDetails(url: string) {
+    async getVideoDetails(urlVal: string) {
+        const url = parseUrl(urlVal);
         let details: Partial<VideoDetails> = {
-            id: url,
-            url
+            id: url.toString(),
+            url: url,
+            platform: url.hostname
         };
 
-        const urlDetails = urlParser.parse(url);
+        const urlDetails = urlParser.parse(url.toString());
         if (urlDetails !== undefined) {
             details.id = urlDetails.id;
-            details.platform = 'youtube';
+            details.platform = urlDetails.provider as Platform;
             switch (urlDetails.provider) {
                 case 'youtube':
-                    details.platform = 'youtube';
                     if (this.youtube !== undefined) {
                         try {
                             details = await this.youtube.getVideoDetails(urlDetails.id);
@@ -55,7 +57,6 @@ export class PlatformManager {
                     }
                     break;
                 case 'vimeo':
-                    details.platform = 'vimeo';
                     if (this.vimeo !== undefined) {
                         try {
                             details = await this.vimeo.getVideoDetails(urlDetails.id);
@@ -65,7 +66,6 @@ export class PlatformManager {
                     }
                     break;
             }
-
         }
 
         return details;
