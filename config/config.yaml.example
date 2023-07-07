@@ -1,7 +1,13 @@
 credentials:
   discord:
-    token: MY_APP_TOKEN
-    clientId: MY_APP_CLIENT_ID
+    token: 'BTEyPTA37zI5NzYxNDk2MjcwMA.GZUSML.xMvCdzE8gESfLiLL-2YVtlrNOTREAL'
+    clientId: '0921023247544967901NOTREAL'
+  # optional
+  youtube: 'AIzaSyCBDLEFI_oe8WIPjifYVTD1gPuLoBObv0NOTREAL'
+  vimeo:
+    clientId: '67b699all52954ff6fb3c972069bc624di7e8392NOTREAL'
+    clientSecret: 'imgbhQxKvMZ+EIIKFcJjAGpevH+yR8xKvMZSk/YZI6PR2069bc62bacf/+3fl/HdjQpqGR8xKvsdMS9fNnOQ4MdKgvrHGTwPXUaicmimyRk8pNOTREAL'
+    token: '2c307df5307df591afa8c307df52734NOTREAL'
 logging:
   level: 'debug'
   file: 'warn'
