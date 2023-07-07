@@ -21,8 +21,11 @@ import {getShowcaseChannelFromCategory} from "./guildUtil.js";
 import {commaListsAnd} from "common-tags";
 import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
 import {ErrorWithCause} from "pony-cause";
+import {mergeArr} from "../../utils/index.js";
 
-export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubmission, logger: Logger) => {
+export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubmission, parentLogger: Logger) => {
+
+    const logger = parentLogger.child({labels: ['Showcase']}, mergeArr);
 
     const existing = await videoSubmission.getShowcase();
     if (existing) {
@@ -98,6 +101,8 @@ export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubm
         videoSubmission.active = false;
         await videoSubmission.save();
     } catch (e) {
-        throw new ErrorWithCause(`Failed to add Video Submission ${videoSubmission.id} to showcase`, {cause: e});
+        const err = new ErrorWithCause(`Failed to add Video Submission ${videoSubmission.id} to showcase`, {cause: e});
+        logger.error(err);
+        throw err;
     }
 }
