@@ -14,6 +14,14 @@ import {Guild} from "./Guild.js";
 import {BotClient} from "../../../BotClient.js";
 import {Client, TextChannel} from "discord.js";
 
+export interface VideoSubmissionSummaryOptions {
+  showOC?: boolean
+  linkVideo?: boolean
+  showVideo?: Boolean
+  showDiscord?: boolean
+  showCreator?: boolean
+}
+
 export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
 
   declare id: CreationOptional<number>;
@@ -63,6 +71,43 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
     }
     return false;
   }
+
+    summary = async (options?: VideoSubmissionSummaryOptions) => {
+        const {
+            showOC = true,
+            linkVideo = false,
+            showVideo = false,
+            showDiscord = false,
+            showCreator = true
+        } = options || {};
+        const parts: string[] = [];
+        if (showOC) {
+            const oc = await this.isOC();
+            if (oc) {
+                parts.push('[OC]');
+            }
+        }
+        const video = await this.getVideo();
+        let title = video.title;
+        if (linkVideo) {
+            title = `[${title}](${video.url})`;
+        }
+        parts.push(title);
+        if (showCreator) {
+            const creator = await video.getCreator();
+            parts.push(`By ${creator.name}`);
+        }
+
+        if (showVideo) {
+            parts.push(video.url);
+        }
+
+        if (showDiscord) {
+            parts.push(this.getDiscordMessageLink());
+        }
+
+        return parts.join(' ');
+    }
 }
 
 

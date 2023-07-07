@@ -23,6 +23,7 @@ import {Creator} from "./creator.js";
 import {UserTrustLevel} from "./UserTrustLevel.js";
 import {Guild} from "./Guild.js";
 import {SpecialRoleType} from "../../infrastructure/Atomic.js";
+import {ShowcasePost} from "./ShowcasePost.js";
 
 export class User extends Model<InferAttributes<User, {
     omit: 'submissions' | 'creators' | 'trustLevel'
@@ -41,6 +42,11 @@ export class User extends Model<InferAttributes<User, {
     declare removeSubmission: HasManyRemoveAssociationMixin<VideoSubmission, number>;
     declare createSubmission: HasManyCreateAssociationMixin<VideoSubmission, 'userId'>;
 
+    declare getShowcases: HasManyGetAssociationsMixin<ShowcasePost>;
+    declare addShowcase: HasManyAddAssociationMixin<ShowcasePost, number>;
+    declare removeShowcase: HasManyRemoveAssociationMixin<ShowcasePost, number>;
+    declare createShowcase: HasManyCreateAssociationMixin<ShowcasePost, 'userId'>;
+
     declare createCreator: BelongsToManyCreateAssociationMixin<Creator>;
     declare addCreator: BelongsToManyAddAssociationMixin<Creator, 'CreatorId'>;
     declare removeCreator: BelongsToManyRemoveAssociationMixin<Creator, 'CreatorId'>;
@@ -53,12 +59,14 @@ export class User extends Model<InferAttributes<User, {
     declare getGuild: BelongsToGetAssociationMixin<Guild>;
 
     declare submissions?: NonAttribute<VideoSubmission[]>;
+    declare showcases?: NonAttribute<ShowcasePost[]>;
     declare creators?: NonAttribute<Creator[]>;
     declare trustLevel: NonAttribute<UserTrustLevel>;
     declare guild: NonAttribute<Guild>
 
     declare static associations: {
         submissions: Association<User, VideoSubmission>;
+        showcases: Association<User, ShowcasePost>;
         creators: Association<User, Creator>
         trustLevel: Association<User, UserTrustLevel>
     };
@@ -115,6 +123,11 @@ export const associate = () => {
         sourceKey: 'id',
         foreignKey: 'userId',
         as: 'submissions'
+    });
+    User.hasMany(ShowcasePost, {
+        sourceKey: 'id',
+        foreignKey: 'userId',
+        as: 'showcases'
     });
     User.belongsToMany(Creator, {through: 'UserCreators'});
     User.hasOne(UserTrustLevel, {foreignKey: 'userId', as: 'trustLevel'});

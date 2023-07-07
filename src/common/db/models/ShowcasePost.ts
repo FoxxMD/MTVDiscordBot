@@ -11,6 +11,7 @@ import {Video} from "./video.js";
 import {User} from "./user.js";
 import {VideoSubmission} from "./videosubmission.js";
 import {Guild} from "./Guild.js";
+import {Client, TextChannel} from "discord.js";
 
 export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCreationAttributes<ShowcasePost>> {
 
@@ -35,6 +36,14 @@ export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCrea
   declare user: NonAttribute<User>;
   declare video: NonAttribute<Video>;
   declare submission?: NonAttribute<VideoSubmission>
+
+  getDiscordMessage = async (client: Client) => {
+    const channel = client.channels.cache.get(this.channelId) as TextChannel;
+    return await channel.messages.fetch(this.messageId);
+  }
+  getDiscordMessageLink = () => {
+    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
+  }
 }
 
 
