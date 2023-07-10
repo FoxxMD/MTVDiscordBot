@@ -5,7 +5,7 @@ import {
     VideoReactions
 } from "../../common/infrastructure/Atomic.js";
 import {User} from "../../common/db/models/user.js";
-import {getOrInsertGuild, getOrInsertVideo} from "./repository.js";
+import {getActiveSubmissions, getOrInsertGuild, getOrInsertVideo} from "./repository.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 import {BotClient} from "../../BotClient.js";
 import {
@@ -98,24 +98,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
 
     const guild = await getOrInsertGuild(dguild);
 
-    const activeSubmissions = await VideoSubmission.findAll({
-        where: {
-            guildId: guild.id,
-            active: true
-        },
-        include: [
-            {
-                model: User,
-                as: 'user'
-            },
-            {
-                model: Video,
-                as: 'video'
-            }
-        ]
-    });
-
-    flogger.verbose(`Found ${activeSubmissions.length} active Video Submissions`);
+    const activeSubmissions = await getActiveSubmissions(guild);
 
     const ownId = dguild.client.user.id;
 
@@ -171,7 +154,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                 ];
                 if (percent > 50) {
                     statusParts.push('=> WILL SHOWCASE');
-                    logger.verbose(statusParts.join(''));
+                    logger.info(statusParts.join(''));
                     try {
                         await addShowcaseVideo(dguild, asub, logger);
                     } catch (e) {
@@ -179,7 +162,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     }
                 } else {
                     statusParts.push('=> Failed to Showcase');
-                    logger.verbose(statusParts.join(''));
+                    logger.info(statusParts.join(''));
                     asub.active = false;
                     await asub.save();
 
@@ -192,5 +175,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                 }
             }
         }
+    } else {
+        flogger.debug(`No active Video Submissions`);
     }
 }

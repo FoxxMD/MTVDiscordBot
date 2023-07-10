@@ -31,6 +31,7 @@
   "dependencies": {
     "@foxxmd/winston": "3.3.31",
     "@googleapis/youtube": "^9.0.0",
+    "@supercharge/promise-pool": "^3.0.0",
     "@types/common-tags": "^1.8.1",
     "@types/vimeo": "^2.1.5",
     "@vimeo/vimeo": "^3.0.0",

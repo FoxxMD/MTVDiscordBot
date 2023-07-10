@@ -71,6 +71,25 @@ export const getVideoByVideoId = async (id: string, platform: string) => {
     return vid;
 }
 
+export const getActiveSubmissions = async (guild: Guild) => {
+    return await VideoSubmission.findAll({
+        where: {
+            guildId: guild.id,
+            active: true
+        },
+        include: [
+            {
+                model: User,
+                as: 'user'
+            },
+            {
+                model: Video,
+                as: 'video'
+            }
+        ]
+    });
+}
+
 export const getOrInsertVideo = async (details: MinimalVideoDetails) => {
     const existing = await getVideoByVideoId(details.id, details.platform);
     if (existing !== undefined) {

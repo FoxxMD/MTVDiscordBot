@@ -9,9 +9,11 @@ import {logLevels} from "../common/logging.js";
 import {getOrInsertGuild} from "./functions/repository.js";
 import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
 import {processFirehoseVideos} from "./functions/firehose.js";
+import {createProcessFirehoseTask} from "./tasks/processFirehose.js";
+import {createHeartbeatTask} from "./tasks/heartbeat.js";
 
 export class Bot {
-    protected client: BotClient;
+    public client: BotClient;
     public db: Sequelize;
     public logger: Logger;
     public config: OperatorConfig;
@@ -65,19 +67,14 @@ export class Bot {
 
             this.logger.info('Starting scheduler...');
 
-            const task = new AsyncTask(
-                'Process Firehose',
-                () => {
-                    for(const [id, guild] of this.client.guilds.cache) {
-                        return processFirehoseVideos(guild, this.logger).then();
-                    }
-                },
-                (err: Error) => {
-                    this.logger.error(err);
-                }
-            )
-            const job = new SimpleIntervalJob({ minutes: 5, }, task)
-            scheduler.addSimpleIntervalJob(job);
+            scheduler.addSimpleIntervalJob(new SimpleIntervalJob({
+                minutes: 30,
+                runImmediately: true
+            }, createHeartbeatTask(this)))
+            scheduler.addSimpleIntervalJob(new SimpleIntervalJob({
+                minutes: 5,
+                runImmediately: true
+            }, createProcessFirehoseTask(this)));
 
             this.logger.info('Scheduler started.');
         } catch (e) {
