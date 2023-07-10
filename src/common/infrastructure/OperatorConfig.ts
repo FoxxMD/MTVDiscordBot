@@ -25,10 +25,18 @@ export interface VimeoCredentials {
     clientSecret
 }
 
+export interface RedditCredentials {
+    clientId: string
+    clientSecret: string
+    accessToken: string
+    refreshToken: string
+}
+
 export interface Credentials {
         youtube?: string
         discord?: DiscordCredentials
         vimeo?: VimeoCredentials
+        reddit?: RedditCredentials
 }
 
 export interface StrongCredentials extends Credentials {

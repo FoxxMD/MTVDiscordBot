@@ -11,12 +11,16 @@ import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
 import {processFirehoseVideos} from "./functions/firehose.js";
 import {createProcessFirehoseTask} from "./tasks/processFirehose.js";
 import {createHeartbeatTask} from "./tasks/heartbeat.js";
+import {RedditClient} from "../reddit.js";
+import Snoowrap from "snoowrap";
+import {ErrorWithCause} from "pony-cause";
 
 export class Bot {
     public client: BotClient;
     public db: Sequelize;
     public logger: Logger;
     public config: OperatorConfig;
+    public reddit?: RedditClient;
 
     constructor(client: BotClient, db: Sequelize, logger: Logger, config: OperatorConfig) {
         this.client = client;
@@ -64,6 +68,22 @@ export class Bot {
                 await registerGuildCommands(this.config.credentials.discord, guild.id, slashData, this.logger);
             }
             this.logger.info('Bot Init complete');
+
+            if(this.config.credentials.reddit !== undefined) {
+                this.logger.info('Init reddit client');
+
+                try {
+                    this.reddit = new RedditClient(this.config.credentials.reddit);
+                    await this.reddit.init();
+                    this.logger.info('Reddit client ready');
+                } catch (e) {
+                    this.logger.error(new ErrorWithCause('Failed to init reddit', {cause: e}));
+                }
+
+                // @ts-ignore
+                //const subreddit = await reddit.getSubreddit('mealtimevideos');
+                //const hot = await subreddit.getHot({});
+            }
 
             this.logger.info('Starting scheduler...');
 

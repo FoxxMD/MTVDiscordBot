@@ -38,6 +38,8 @@ logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
 
         logger = getLogger(logging);
 
+
+
         const client = new BotClient({
             intents: [
                 GatewayIntentBits.Guilds,
