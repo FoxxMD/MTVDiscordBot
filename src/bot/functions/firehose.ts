@@ -13,11 +13,17 @@ import {
     ChatInputCommandInteraction,
     Guild as DiscordGuild, Message,
     ModalSubmitInteraction,
-    TextChannel
+    TextChannel, userMention,
+    time
 } from "discord.js";
 import {GuildSetting} from "../../common/db/models/GuildSetting.js";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
-import {durationToTimestamp, formatNumber, truncateStringToLength} from "../../utils/StringUtils.js";
+import {
+    durationToTimestamp,
+    formatNumber,
+    parseRegexSingleOrFail,
+    truncateStringToLength
+} from "../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {Guild} from "../../common/db/models/Guild.js";
 import {Logger} from "@foxxmd/winston";
@@ -25,6 +31,8 @@ import {mergeArr} from "../../utils/index.js";
 import {addShowcaseVideo} from "./showcase.js";
 import {Video} from "../../common/db/models/video.js";
 import {ErrorWithCause} from "pony-cause";
+import {commaListsAnd} from "common-tags";
+import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
 
 export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
 
@@ -50,10 +58,16 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
         const detailParts: string[] = [];
         const creator = await videoEntity.getCreator();
         if (creator !== undefined) {
-            detailParts.push(`Creator: _${creator.name}_`);
+            let creatorStr = `Creator: _${creator.name}_`;
+            const creatorUsers = await creator.getUsers();
+            if (creatorUsers.length > 0) {
+                creatorStr = `${creatorStr} (${commaListsAnd`${creatorUsers.map(x => userMention(x.discordId))}`})`;
+            }
+            detailParts.push(creatorStr);
         }
         detailParts.push(`Submitted By: <@${interaction.user.id}>`)
         detailParts.push(`Link: ${videoEntity.url}`);
+        detailParts.push(`Voting Active: **Yes** (Until ${time(dayjs().add(24, 'hours').toDate())})`)
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
 
@@ -168,8 +182,14 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     logger.verbose(statusParts.join(''));
                     asub.active = false;
                     await asub.save();
-                }
 
+                    const body = message.content;
+                    const activeStr = parseRegexSingleOrFail(REGEX_VOTING_ACTIVE, body);
+                    if(activeStr !== undefined && activeStr.named.status === 'Yes') {
+                        const edited = body.replace(REGEX_VOTING_ACTIVE, 'Voting Active: **No**');
+                        await message.edit({content: edited});
+                    }
+                }
             }
         }
     }

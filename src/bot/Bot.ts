@@ -9,7 +9,6 @@ import {logLevels} from "../common/logging.js";
 import {getOrInsertGuild} from "./functions/repository.js";
 import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
 import {processFirehoseVideos} from "./functions/firehose.js";
-import {scheduler} from "timers/promises";
 
 export class Bot {
     protected client: BotClient;
