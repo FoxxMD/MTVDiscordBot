@@ -163,7 +163,10 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     continue;
                 }
                 const guildUser = await dguild.members.fetch(userId);
-                const hasTrusted = trustedRoles.some(x => guildUser.roles.resolve(x));
+                const hasTrusted = trustedRoles.some(x => {
+                    const foundRole = guildUser.roles.resolve(x);
+                    return foundRole !== null && foundRole !== undefined;
+                });
                 if(hasTrusted) {
                     trustedReports++;
                 }
