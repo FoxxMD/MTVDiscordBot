@@ -77,6 +77,8 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
         await submissionMessage.react(VideoReactions.DOWN);
         await submissionMessage.react(VideoReactions.REPORT);
 
+        await submissionMessage.startThread({name: video.title});
+
         await VideoSubmission.create({
             messageId: submissionMessage.id,
             guildId: interaction.guild.id,
