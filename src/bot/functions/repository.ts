@@ -16,7 +16,7 @@ export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildM
     try {
         let user = await User.findOne({
             where: {name: member.user.username, guildId: dguild.id},
-            include: {all: true, nested: true}
+            //include: {all: true, nested: true}
         });
         if (user === null) {
             const guild = await getOrInsertGuild(dguild);

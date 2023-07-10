@@ -57,7 +57,7 @@ export const checkLengthConstraints = async (length: number, interaction: Intera
 
 export const checkSelfPromotion = async (interaction: InteractionLike, platform: string, details: MinimalCreatorDetails, user: User) => {
     const creator = await getCreatorByDetails(platform, details);
-    const submissions = await VideoSubmission.findAll({where: {userId: user.id}, include: {all: true, nested: true}})
+    const submissions = await VideoSubmission.findAll({where: {userId: user.id}, /*include: {all: true, nested: true}*/})
     if (submissions.length < 3) {
         // grace period when they have little history
         return;
