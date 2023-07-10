@@ -11,8 +11,9 @@ import {mergeArr} from "../../utils/index.js";
 import {ErrorWithCause} from "pony-cause";
 import {urlParser} from './UrlParser.js';
 import {VimeoClient} from "./clients/VimeoClient.js";
-import {getCreatorByDetails, upsertVideoCreator} from "../../bot/functions/repository.js";
+import {getCreatorByDetails, getVideoByVideoId, upsertVideoCreator} from "../../bot/functions/repository.js";
 import {parseUrl} from "../../utils/StringUtils.js";
+import {Video} from "../db/models/video.js";
 
 export class PlatformManager {
 
@@ -34,7 +35,7 @@ export class PlatformManager {
         }
     }
 
-    async getVideoDetails(urlVal: string) {
+    async getVideoDetails(urlVal: string): Promise<[Partial<VideoDetails>, Video?]> {
         const url = parseUrl(urlVal);
         let details: Partial<VideoDetails> = {
             id: url.toString(),
@@ -44,6 +45,11 @@ export class PlatformManager {
 
         const urlDetails = urlParser.parse(url.toString());
         if (urlDetails !== undefined) {
+            const existingVideo = await getVideoByVideoId(urlDetails.id, urlDetails.provider);
+            if(existingVideo !== undefined) {
+                details = await existingVideo.toVideoDetails();
+                return [details, existingVideo];
+            }
             details.id = urlDetails.id;
             details.platform = urlDetails.provider as Platform;
             switch (urlDetails.provider) {
@@ -68,7 +74,7 @@ export class PlatformManager {
             }
         }
 
-        return details;
+        return [details, undefined];
     }
 
     async getChannelDetails(platform: string, channelId: string): Promise<FullCreatorDetails | undefined> {

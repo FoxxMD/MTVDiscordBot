@@ -156,7 +156,8 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     statusParts.push('=> WILL SHOWCASE');
                     logger.info(statusParts.join(''));
                     try {
-                        await addShowcaseVideo(dguild, asub, logger);
+                        const video = await asub.getVideo();
+                        await addShowcaseVideo(dguild, video, logger, {videoSubmission: asub});
                     } catch (e) {
                         // keep moving
                     }
@@ -165,13 +166,12 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     logger.info(statusParts.join(''));
                     asub.active = false;
                     await asub.save();
-
-                    const body = message.content;
-                    const activeStr = parseRegexSingleOrFail(REGEX_VOTING_ACTIVE, body);
-                    if(activeStr !== undefined && activeStr.named.status === 'Yes') {
-                        const edited = body.replace(REGEX_VOTING_ACTIVE, 'Voting Active: **No**');
-                        await message.edit({content: edited});
-                    }
+                }
+                const body = message.content;
+                const activeStr = parseRegexSingleOrFail(REGEX_VOTING_ACTIVE, body);
+                if(activeStr !== undefined && activeStr.named.status === 'Yes') {
+                    const edited = body.replace(REGEX_VOTING_ACTIVE, 'Voting Active: **No**');
+                    await message.edit({content: edited});
                 }
             }
         }

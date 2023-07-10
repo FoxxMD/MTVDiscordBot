@@ -6,14 +6,13 @@ import {OperatorConfig} from "../common/infrastructure/OperatorConfig.js";
 import {initCommands, registerGuildCommands} from "../command/handler.js";
 import {Events, TextChannel} from "discord.js";
 import {logLevels} from "../common/logging.js";
-import {getOrInsertGuild} from "./functions/repository.js";
+import {getOrInsertGuild, getOrInsertVideo, getVideoByVideoId} from "./functions/repository.js";
 import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
-import {processFirehoseVideos} from "./functions/firehose.js";
 import {createProcessFirehoseTask} from "./tasks/processFirehose.js";
 import {createHeartbeatTask} from "./tasks/heartbeat.js";
-import {RedditClient} from "../reddit.js";
-import Snoowrap from "snoowrap";
+import {RedditClient} from "../RedditClient.js";
 import {ErrorWithCause} from "pony-cause";
+import {createRedditHotTask} from "./tasks/processRedditHot.js";
 
 export class Bot {
     public client: BotClient;
@@ -69,9 +68,8 @@ export class Bot {
             }
             this.logger.info('Bot Init complete');
 
-            if(this.config.credentials.reddit !== undefined) {
+            if (this.config.credentials.reddit !== undefined) {
                 this.logger.info('Init reddit client');
-
                 try {
                     this.reddit = new RedditClient(this.config.credentials.reddit);
                     await this.reddit.init();
@@ -79,10 +77,6 @@ export class Bot {
                 } catch (e) {
                     this.logger.error(new ErrorWithCause('Failed to init reddit', {cause: e}));
                 }
-
-                // @ts-ignore
-                //const subreddit = await reddit.getSubreddit('mealtimevideos');
-                //const hot = await subreddit.getHot({});
             }
 
             this.logger.info('Starting scheduler...');
@@ -91,10 +85,19 @@ export class Bot {
                 minutes: 30,
                 runImmediately: true
             }, createHeartbeatTask(this)))
+
             scheduler.addSimpleIntervalJob(new SimpleIntervalJob({
                 minutes: 5,
                 runImmediately: true
             }, createProcessFirehoseTask(this)));
+
+            if (this.reddit !== undefined && this.reddit.ready) {
+                scheduler.addSimpleIntervalJob(new SimpleIntervalJob({
+                    minutes: 60,
+                    runImmediately: true
+                }, createRedditHotTask(this)));
+            }
+
 
             this.logger.info('Scheduler started.');
         } catch (e) {

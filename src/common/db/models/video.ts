@@ -19,6 +19,7 @@ import {Creator} from "./creator.js";
 import {User} from "./user.js";
 import {ShowcasePost} from "./ShowcasePost.js";
 import dayjs from "dayjs";
+import {MinimalVideoDetails, VideoDetails} from "../../infrastructure/Atomic.js";
 
 export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>, InferCreationAttributes<Video>> {
 
@@ -60,12 +61,75 @@ export class Video extends Model<InferAttributes<Video, { omit: 'submissions'}>,
     return undefined;
   }
 
-  validForSubmission = async () => {
+  getLastShowcase = async () => {
+    const subs = await this.getShowcases();
+    if (subs.length > 0) {
+      subs.sort((a, b) => b.id - a.id);
+      return subs[0];
+    }
+    return undefined;
+  }
+
+  getMostRecentPost = async () => {
     const lastSubmission = await this.getLastSubmission();
-    if (lastSubmission === undefined) {
+    const lastShowcase = await this.getLastShowcase();
+
+    if(lastSubmission === undefined && lastShowcase === undefined) {
+      return undefined;
+    }
+    if(lastSubmission !== undefined && lastShowcase === undefined) {
+      return lastSubmission;
+    }
+    if(lastShowcase !== undefined && lastSubmission === undefined) {
+      return lastShowcase;
+    }
+    if(dayjs(lastSubmission.createdAt).isAfter(lastShowcase.createdAt)) {
+      return lastSubmission;
+    }
+    return lastShowcase;
+  }
+
+  validForSubmission = async () => {
+    const mostRecent = await this.getMostRecentPost();
+    if(mostRecent === undefined) {
       return true;
     }
-    return dayjs(lastSubmission.createdAt).isBefore(dayjs().subtract(dayjs.duration('30 days')));
+    const monthAgo = dayjs().subtract(30, 'days');
+    if(dayjs(mostRecent.createdAt).isAfter(monthAgo)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  isOC = async () => {
+    const creatorUsers = await this.getCreatorUsers();
+    return creatorUsers.length > 0;
+  }
+
+  getCreatorUsers = async () => {
+    const creator = await this.getCreator();
+    if(creator !== undefined) {
+      return await creator.getUsers();
+    }
+    return [];
+  }
+
+  toVideoDetails = async (): Promise<MinimalVideoDetails> => {
+    const creator = await this.getCreator();
+    return {
+      id: this.platformId,
+      platform: this.platform,
+      duration: this.length,
+      title: this.title,
+      url: new URL(this.url),
+      nsfw: this.nsfw,
+      creator: {
+        id: creator.platformId,
+        name: creator.name,
+        createdAt: creator.createdAt
+      }
+    }
   }
 }
 

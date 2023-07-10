@@ -66,7 +66,7 @@ module.exports = {
 
         const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
-        const deets = await manager.getVideoDetails(url);
+        const [deets, existingVideo] = await manager.getVideoDetails(url);
 
         if(!AllowedVideoProviders.includes(deets.platform)) {
             return await interaction.reply(
@@ -81,15 +81,14 @@ module.exports = {
             )
         }
 
-        const existingVideo = await getVideoByVideoId(deets.id, deets.platform);
         if (existingVideo !== undefined) {
             const isValidToSubmit = await existingVideo.validForSubmission();
             if (!isValidToSubmit) {
-                const lastSubmission = await existingVideo.getLastSubmission();
+                const mostRecentPost = await existingVideo.getMostRecentPost();
                 return await interaction.reply({
                     content: oneLine`
-                    This video was last submitted ${time(lastSubmission.createdAt)} (${time(lastSubmission.createdAt, 'R')}) 
-                    here ${lastSubmission.getDiscordMessageLink()}.
+                    This video was last seen ${time(mostRecentPost.createdAt)} (${time(mostRecentPost.createdAt, 'R')}) 
+                    here ${mostRecentPost.getDiscordMessageLink()}.
                     At least one month must pass between submissions of the same video.`,
                     ephemeral: true
                 });

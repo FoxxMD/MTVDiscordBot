@@ -1,6 +1,6 @@
 import {InteractionLike, MinimalVideoDetails, VideoDetails} from "../../common/infrastructure/Atomic.js";
 import {User} from "../../common/db/models/user.js";
-import {getOrInsertVideo} from "./repository.js";
+import {getOrInsertGuild, getOrInsertVideo} from "./repository.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 import {BotClient} from "../../BotClient.js";
 import {
@@ -22,25 +22,40 @@ import {commaListsAnd} from "common-tags";
 import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
 import {ErrorWithCause} from "pony-cause";
 import {mergeArr} from "../../utils/index.js";
+import {Video} from "../../common/db/models/video.js";
 
-export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubmission, parentLogger: Logger) => {
+export interface ShowcaseOptions
+{
+    externalSubmitter?: string,
+    externalUrl?: string
+    videoSubmission?: VideoSubmission
+}
+export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger: Logger, options?: ShowcaseOptions) => {
+
+    const {
+        videoSubmission,
+        externalSubmitter,
+        externalUrl
+    } = options;
 
     const logger = parentLogger.child({labels: ['Showcase']}, mergeArr);
 
-    const existing = await videoSubmission.getShowcase();
-    if (existing) {
-        logger.warn(`Tried to add showcase video for Submission (${videoSubmission.id}) that already has a showcase! Marking submission as inactive and skipping.`);
-        videoSubmission.active = false;
-        await videoSubmission.save();
-        return;
+    let submitter: User | undefined;
+    if(videoSubmission !== undefined) {
+        const existing = await videoSubmission.getShowcase();
+        if (existing) {
+            logger.warn(`Tried to add showcase video for Submission (${videoSubmission.id}) that already has a showcase! Marking submission as inactive and skipping.`);
+            videoSubmission.active = false;
+            await videoSubmission.save();
+            return;
+        }
+        submitter = await videoSubmission.getUser();
     }
 
-    const guild = await videoSubmission.getGuild();
-    const video = await videoSubmission.getVideo();
-    const submitter = await videoSubmission.getUser();
+    const guild = await getOrInsertGuild(dguild);
 
     let catId: string;
-    if (await videoSubmission.isOC()) {
+    if (await video.isOC()) {
         const ocVal = await guild.getSettingValue<string>(GuildSettings.CATEGORY_OC);
         if (ocVal === undefined) {
             logger.warn(`Cannot post OC showcase because no OC Category is set!`);
@@ -81,7 +96,19 @@ export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubm
             detailParts.push(creatorStr);
         }
 
-        detailParts.push(`Submitted By: ${userMention(submitter.discordId)} here ${videoSubmission.getDiscordMessageLink()}`)
+        let extPart = '';
+        if(videoSubmission !== undefined && submitter !== undefined) {
+            detailParts.push(`Submitted By: ${userMention(submitter.discordId)} ${videoSubmission.getDiscordMessageLink()}`)
+        } else {
+            if(externalSubmitter !== undefined) {
+                extPart = `Submitted By: u/${externalSubmitter}`;
+            }
+            if(externalUrl !== undefined) {
+                extPart = `${extPart} \`${externalUrl}\``
+            }
+            detailParts.push(extPart);
+        }
+
         detailParts.push(`Link: ${video.url}`);
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
@@ -93,15 +120,20 @@ export const addShowcaseVideo = async (dguild: Guild, videoSubmission: VideoSubm
             guildId: dguild.id,
             channelId: submissionMessage.channelId,
             videoId: video.id,
-            userId: submitter.id,
+            userId: submitter !== undefined ? submitter.id : undefined,
+            submissionId: videoSubmission !== undefined ? videoSubmission.id : undefined,
+            url: externalUrl
         });
 
-        logger.info(`Created Showcase Post ${post} from Video Submission ${videoSubmission.id} in ${category.name} -> ${channel.name}: ${video.title}`);
+        const attribution = videoSubmission !== undefined ? `Video Submission ${videoSubmission.id}` : extPart;
+        logger.info(`Created Showcase Post ${post.id} from ${attribution} in ${category.name} -> ${channel.name}: ${video.title}`);
 
-        videoSubmission.active = false;
-        await videoSubmission.save();
+        if(videoSubmission !== undefined) {
+            videoSubmission.active = false;
+            await videoSubmission.save();
+        }
     } catch (e) {
-        const err = new ErrorWithCause(`Failed to add Video Submission ${videoSubmission.id} to showcase`, {cause: e});
+        const err = new ErrorWithCause(`Failed to add Video ${video.id} to showcase`, {cause: e});
         logger.error(err);
         throw err;
     }

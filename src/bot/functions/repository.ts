@@ -10,6 +10,8 @@ import {CreatorDetails, MinimalVideoDetails} from "../../common/infrastructure/A
 import {SimpleError} from "../../utils/Errors.js";
 import {Creator} from "../../common/db/models/creator.js";
 import {populateGuildDefaults} from "./guildUtil.js";
+import dayjs from "dayjs";
+import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
 
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild) => {
     // TODO reduce eager loading
@@ -76,6 +78,50 @@ export const getActiveSubmissions = async (guild: Guild) => {
         where: {
             guildId: guild.id,
             active: true
+        },
+        include: [
+            {
+                model: User,
+                as: 'user'
+            },
+            {
+                model: Video,
+                as: 'video'
+            }
+        ]
+    });
+}
+
+export const getRecentSubmissionsByVideo = async (guild: Guild, video: Video, moreRecentThan: Date = dayjs().subtract(1, 'month').toDate()) => {
+    return await VideoSubmission.findAll({
+        where: {
+            guildId: guild.id,
+            videoId: video.id,
+            createdAt: {
+                [Op.gte]: moreRecentThan
+            }
+        },
+        include: [
+            {
+                model: User,
+                as: 'user'
+            },
+            {
+                model: Video,
+                as: 'video'
+            }
+        ]
+    });
+}
+
+export const getRecentShowcasesByVideo = async (guild: Guild, video: Video, moreRecentThan: Date = dayjs().subtract(1, 'month').toDate()) => {
+    return await ShowcasePost.findAll({
+        where: {
+            guildId: guild.id,
+            videoId: video.id,
+            createdAt: {
+                [Op.gte]: moreRecentThan
+            }
         },
         include: [
             {
