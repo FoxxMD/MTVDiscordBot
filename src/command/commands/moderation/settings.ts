@@ -25,6 +25,14 @@ module.exports = {
                         .setRequired(false))
         )
         .addSubcommand(subCommand =>
+            subCommand.setName('safety')
+                .setDescription('Display or set reports channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('The channel to post to')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
             subCommand.setName('video-length')
                 .setDescription('Display or set min/max lengths allowed for videos')
                 .addNumberOption(opt =>
@@ -79,6 +87,19 @@ module.exports = {
                     await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, channel.id);
                     await interaction.reply({
                         content: `Set => Submission channel is #${channel.name}`,
+                        ephemeral: true
+                    });
+                }
+                break;
+            case 'safety':
+                const safetyChannel = interaction.options.getChannel('channel');
+                if (safetyChannel === undefined) {
+                    const subChannel = await guild.getSettingValue<string>(GuildSettings.SAFETY_CHANNEL);
+                    await interaction.reply({content: `Safety channel is #${subChannel}`, ephemeral: true});
+                } else {
+                    await guild.upsertSetting(GuildSettings.SAFETY_CHANNEL, safetyChannel.id);
+                    await interaction.reply({
+                        content: `Set => Safety channel is #${safetyChannel.name}`,
                         ephemeral: true
                     });
                 }

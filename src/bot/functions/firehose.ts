@@ -14,7 +14,7 @@ import {
     Guild as DiscordGuild, Message,
     ModalSubmitInteraction,
     TextChannel, userMention,
-    time
+    time,
 } from "discord.js";
 import {GuildSetting} from "../../common/db/models/GuildSetting.js";
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
@@ -29,10 +29,10 @@ import {Guild} from "../../common/db/models/Guild.js";
 import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../../utils/index.js";
 import {addShowcaseVideo} from "./showcase.js";
-import {Video} from "../../common/db/models/video.js";
 import {ErrorWithCause} from "pony-cause";
 import {commaListsAnd} from "common-tags";
 import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
+import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 
 export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
 
@@ -99,6 +99,19 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
     const flogger = parentLogger.child({labels: ['Firehose']}, mergeArr);
 
     const guild = await getOrInsertGuild(dguild);
+    const approvedRoles = await guild.getRoleIdsByType(ROLE_TYPES.APPROVED);
+    const janitorRoles = await guild.getRoleIdsByType(ROLE_TYPES.JANITOR);
+    const trustedRoles = approvedRoles.concat(janitorRoles);
+
+    const safetyChannelId = await guild.getSettingValue<string>(GuildSettings.SAFETY_CHANNEL);
+    let safetyChannel: TextChannel | undefined;
+    if (safetyChannelId !== undefined) {
+        try {
+            safetyChannel = await dguild.channels.fetch(safetyChannelId) as TextChannel;
+        } catch (e) {
+            flogger.warn(`No safety channel set or could not get channel with ID ${safetyChannelId}`);
+        }
+    }
 
     const activeSubmissions = await getActiveSubmissions(guild);
 
@@ -132,6 +145,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
             const downUsers = await down.users.fetch();
 
             const report = message.reactions.resolve(VideoReactions.REPORT);
+            const reportUsers = await report.users.fetch();
 
             // ignore bot and submitter reacts
             asub.upvotes = upUsers.filter((user, key) => {
@@ -140,11 +154,37 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
             asub.downvotes = downUsers.filter((user, key) => {
                 return key !== ownId && key !== submitter.discordId;
             }).size;
-
-
-            // TODO report
+            asub.reports = reportUsers.filter((user, key) => {
+                return key !== ownId && key !== submitter.discordId;
+            }).size;
+            let trustedReports = 0;
+            for(const [userId, clientUser] of reportUsers) {
+                if(userId === ownId || userId === submitter.discordId) {
+                    continue;
+                }
+                const guildUser = await dguild.members.fetch(userId);
+                const hasTrusted = trustedRoles.some(x => guildUser.roles.resolve(x));
+                if(hasTrusted) {
+                    trustedReports++;
+                }
+            }
+            asub.reportsTrusted = trustedReports;
 
             await asub.save();
+
+            if(asub.reportsTrusted > 4 || asub.reports > 9 || (asub.reportsTrusted > 3 && asub.reports > 7)) {
+                let msg = await asub.toChannelSummary({showVoting: false});
+                msg = `Removed via automated reporting\n* CreatedAt: ${time(asub.createdAt)}\n* Reports: ${asub.reports}\n* Trusted Reports: ${asub.reportsTrusted}\n\n${msg}`;
+                flogger.warn(msg);
+                if(safetyChannel !== undefined) {
+                    await safetyChannel.send({content: msg, flags: 4});
+                }
+                asub.active = false;
+                asub.messageId = undefined;
+                await message.delete();
+                await asub.save();
+                continue;
+            }
 
             // process if 24 hours has passed
             if (dayjs(asub.createdAt).add(24, 'hours').isBefore(dayjs())) {

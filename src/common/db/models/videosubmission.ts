@@ -12,7 +12,10 @@ import {User} from "./user.js";
 import {ShowcasePost} from "./ShowcasePost.js";
 import {Guild} from "./Guild.js";
 import {BotClient} from "../../../BotClient.js";
-import {Client, TextChannel} from "discord.js";
+import {Client, TextChannel, time, userMention} from "discord.js";
+import {durationToTimestamp} from "../../../utils/StringUtils.js";
+import dayjs from "dayjs";
+import {commaListsAnd} from "common-tags";
 
 export interface VideoSubmissionSummaryOptions {
   showOC?: boolean
@@ -22,16 +25,24 @@ export interface VideoSubmissionSummaryOptions {
   showCreator?: boolean
 }
 
+export interface ChannelSummaryOptions {
+    showVoting?: boolean
+    userSnowflake?: string
+}
+
+
 export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
 
   declare id: CreationOptional<number>;
-  declare messageId: string;
+  declare messageId: CreationOptional<string>;
   declare channelId: string;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
   declare upvotes: CreationOptional<number>;
   declare downvotes: CreationOptional<number>;
+  declare reports: CreationOptional<number>;
+  declare reportsTrusted: CreationOptional<number>;
   declare url: CreationOptional<string>;
   declare active: boolean;
 
@@ -108,6 +119,46 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
 
         return parts.join(' ');
     }
+
+    toChannelSummary = async (options?: ChannelSummaryOptions) => {
+
+      const {
+          userSnowflake,
+          showVoting = false,
+      } = options || {};
+
+        const videoEntity = await this.getVideo();
+        const title = `**${videoEntity.title}** [${durationToTimestamp(dayjs.duration({seconds: videoEntity.length}))}]`;
+        const detailParts: string[] = [];
+        const creator = await videoEntity.getCreator();
+        if (creator !== undefined) {
+            let creatorStr = `Creator: _${creator.name}_`;
+            const creatorUsers = await creator.getUsers();
+            if (creatorUsers.length > 0) {
+                creatorStr = `${creatorStr} (${commaListsAnd`${creatorUsers.map(x => userMention(x.discordId))}`})`;
+            }
+            detailParts.push(creatorStr);
+        }
+        let snowflake: string = userSnowflake;
+        if(snowflake === undefined) {
+            const user = await this.getUser();
+            if(user !== undefined) {
+                snowflake = user.discordId;
+            }
+        }
+        detailParts.push(`Submitted By: <@${snowflake}>`)
+        detailParts.push(`Link: ${videoEntity.url}`);
+        if(showVoting) {
+            if(this.active) {
+                const createdAt = this.createdAt !== undefined ? dayjs(this.createdAt) : dayjs();
+                detailParts.push(`Voting Active: **Yes** (Until ${time(createdAt.add(24, 'hours').toDate())})`)
+            } else {
+                detailParts.push(`Voting Active: **No**`);
+            }
+        }
+
+        return `${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`;
+    }
 }
 
 
@@ -133,6 +184,14 @@ export const init = (sequelize: Sequelize) => {
       defaultValue: 0
     },
     downvotes: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    reports: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    reportsTrusted: {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },

@@ -17,6 +17,11 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
         await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, defaultChannel.id);
     }
 
+    const defaultSafetyChannel = channels.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.SAFETY_CHANNEL));
+    if (defaultSafetyChannel !== undefined) {
+        await guild.upsertSetting(GuildSettings.SAFETY_CHANNEL, defaultSafetyChannel.id);
+    }
+
     // init default roles
     const discordRoles = await discGuild.roles.fetch();
 
