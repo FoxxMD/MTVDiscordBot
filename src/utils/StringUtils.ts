@@ -2,8 +2,14 @@ import {Duration} from "dayjs/plugin/duration.js";
 import {numberFormatOptions, RegExResult} from "../common/infrastructure/Atomic.js";
 import {SimpleError} from "./Errors.js";
 import dayjs from "dayjs";
-import {TemplateTag, stripIndentTransformer, TemplateTransformer, trimResultTransformer} from 'common-tags'
+import {stripIndentTransformer, TemplateTag, TemplateTransformer, trimResultTransformer} from 'common-tags'
 import normalizeUrl from "normalize-url";
+import {
+    REGEX_TIME_FULL,
+    REGEX_TIME_MINUTES,
+    REGEX_TIME_SECONDS,
+    REGEX_YOUTUBE
+} from "../common/infrastructure/Regex.js";
 
 export const parseRegex = (reg: RegExp, val: string): RegExResult[] | undefined => {
 
@@ -45,10 +51,6 @@ export const parseRegexSingleOrFail = (reg: RegExp, val: string): RegExResult | 
     return undefined;
 }
 
-/**
- * @see https://stackoverflow.com/a/61033353/1469797
- */
-const REGEX_YOUTUBE: RegExp = /(?:https?:\/\/)?(?:www\.)?youtu(?:\.be\/|be.com\/\S*(?:watch|embed)(?:(?:(?=\/[^&\s\?]+(?!\S))\/)|(?:\S*v=|v\/)))([^&\s\?]+)/g;
 export const parseUsableLinkIdentifier = (regexes: RegExp[] = [REGEX_YOUTUBE]) => (val?: string): (string | undefined) => {
     if (val === undefined) {
         return val;
@@ -66,10 +68,6 @@ export const parseUsableLinkIdentifier = (regexes: RegExp[] = [REGEX_YOUTUBE]) =
     }
     return val;
 }
-
-const REGEX_TIME_FULL: RegExp = /(?<hours>[0-2][0-9]?):(?<minutes>[0-5][0-9]?):(?<seconds>[0-5][0-9]?)/;
-const REGEX_TIME_MINUTES: RegExp = /(?<minutes>[0-5][0-9]?):(?<seconds>[0-5][0-9]?)/;
-const REGEX_TIME_SECONDS: RegExp = /(?<seconds>[0-5][0-9]?)/;
 
 export const timestampToDuration = (str: string): Duration => {
     const full = parseRegexSingleOrFail(REGEX_TIME_FULL, str);
