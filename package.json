@@ -29,6 +29,7 @@
     "circular-graph": "madge --image graph.svg --circular --extensions ts src/index.ts"
   },
   "dependencies": {
+    "@foxxmd/redact-string": "^0.1.1",
     "@foxxmd/winston": "3.3.31",
     "@googleapis/youtube": "^9.0.0",
     "@supercharge/promise-pool": "^3.0.0",

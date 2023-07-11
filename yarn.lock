@@ -114,6 +114,11 @@
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-8.43.0.tgz#559ca3d9ddbd6bf907ad524320a0d14b85586af0"
   integrity sha512-s2UHCoiXfxMvmfzqoN+vrQ84ahUSYde9qNO1MdxmoEhyHWsfmwOpFlwYV+ePJEVc7gFnATGUi376WowX1N7tFg==
 
+"@foxxmd/redact-string@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@foxxmd/redact-string/-/redact-string-0.1.1.tgz#c21960b6bfa7edf4973c0497340d24068c3c7219"
+  integrity sha512-rwM7+TkOq5HV0IMFnOxRzwPuTcFCaMj4EUxekpELQmovkkMG4MdrtdwOcjjFgJAwLUh1e84FsKcU7sZrEZZ0wA==
+
 "@foxxmd/winston@3.3.31":
   version "3.3.31"
   resolved "https://registry.yarnpkg.com/@foxxmd/winston/-/winston-3.3.31.tgz#fa54821d25c8618dc045866dd9cbc9688e728c77"

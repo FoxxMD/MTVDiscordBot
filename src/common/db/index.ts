@@ -7,7 +7,7 @@ import {OperatorConfig} from "../infrastructure/OperatorConfig.js";
 import {fileOrDirectoryIsWriteable} from "../../utils/io.js";
 import {setupMappings} from "./setup.js";
 import {Options} from "sequelize/types/sequelize.js";
-import {replaceChars} from "../../utils/StringUtils.js";
+import {redactString} from "@foxxmd/redact-string";
 
 export const initDB = async (config: OperatorConfig) => {
     const logger = getLogger(config.logging, 'DB');
@@ -42,10 +42,10 @@ export const initDB = async (config: OperatorConfig) => {
     } else {
         let connectionHint = '';
         if(seqOpts.host !== undefined) {
-            connectionHint = replaceChars(seqOpts.host, 3, {replace: 'numeric'});
+            connectionHint = redactString(seqOpts.host, 3, {replace: 'numeric'});
         }
         if(seqOpts.port !== undefined) {
-            connectionHint = `${connectionHint}:${replaceChars(seqOpts.port.toString(), 2)}`;
+            connectionHint = `${connectionHint}:${redactString(seqOpts.port.toString(), 2)}`;
         }
         if(seqOpts.database !== undefined) {
             connectionHint = `${connectionHint}/${seqOpts.database}`
