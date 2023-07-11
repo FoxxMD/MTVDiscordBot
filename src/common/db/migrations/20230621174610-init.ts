@@ -68,7 +68,7 @@ const migration: Migration = {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER.UNSIGNED
             },
             roleType: {
                 type: Sequelize.STRING,
@@ -103,7 +103,7 @@ const migration: Migration = {
                 allowNull: false,
                 autoIncrement: true,
                 primaryKey: true,
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER.UNSIGNED
             },
             discordId: {
                 type: Sequelize.STRING
@@ -144,7 +144,7 @@ const migration: Migration = {
                 allowNull: false
             },
             videoId: {
-                type: Sequelize.INTEGER,
+                type: Sequelize.INTEGER.UNSIGNED,
                 allowNull: false
             },
             guildId: {
@@ -278,7 +278,7 @@ const migration: Migration = {
                 type: Sequelize.STRING
             },
             videoId: {
-                type: Sequelize.INTEGER
+                type: Sequelize.INTEGER.UNSIGNED
             },
             guildId: {
                 type: Sequelize.STRING

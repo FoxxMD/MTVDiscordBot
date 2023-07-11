@@ -3,12 +3,12 @@ import {Migration} from "sequelize-cli";
 const migration: Migration = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('VideoSubmissions', 'reports', {
-      type: Sequelize.INTEGER,
+      type: Sequelize.INTEGER.UNSIGNED,
       defaultValue: 0,
       allowNull: false,
     });
     await queryInterface.addColumn('VideoSubmissions', 'reportsTrusted', {
-      type: Sequelize.INTEGER,
+      type: Sequelize.INTEGER.UNSIGNED,
       defaultValue: 0,
       allowNull: false,
     });
