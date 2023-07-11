@@ -5,28 +5,20 @@ import {Sequelize} from "sequelize";
 import {Umzug, SequelizeStorage} from "umzug";
 import {OperatorConfig} from "../infrastructure/OperatorConfig.js";
 import {fileOrDirectoryIsWriteable} from "../../utils/io.js";
-import {LogFn} from "umzug/lib/types.js";
-import {Logger} from "@foxxmd/winston";
 import {setupMappings} from "./setup.js";
+import {Options} from "sequelize/types/sequelize.js";
+import {replaceChars} from "../../utils/StringUtils.js";
 
 export const initDB = async (config: OperatorConfig) => {
     const logger = getLogger(config.logging, 'DB');
 
-    let dbPath = path.resolve(dataDir, `db.sqlite`);
-
-    logger.debug(`Location: ${dbPath}`);
-    try {
-        fileOrDirectoryIsWriteable(dbPath)
-    } catch (e) {
-        logger.warn('Unable to access DB file location! Will use MEMORY sqlite database instead. Your database will be wiped when the application is stopped.');
-        logger.warn(e);
-        dbPath = ':memory:';
-    }
-
     const {
         logging: {
             db = false
-        } = {}
+        } = {},
+        database = {
+            dialect: 'sqlite'
+        },
     } = config;
 
     let logOption: ((msg: string) => void) | boolean = false;
@@ -34,10 +26,36 @@ export const initDB = async (config: OperatorConfig) => {
         logOption = (msg: string) => logger.debug(msg);
     }
 
+    let seqOpts: Options = database;
+    if(seqOpts.dialect === 'sqlite') {
+        let dbPath = path.resolve(dataDir, `db.sqlite`);
+
+        logger.debug(`Using SQLITE at ${dbPath}`);
+        try {
+            fileOrDirectoryIsWriteable(dbPath)
+        } catch (e) {
+            logger.warn('Unable to access DB file location! Will use MEMORY sqlite database instead. Your database will be wiped when the application is stopped.');
+            logger.warn(e);
+            dbPath = ':memory:';
+        }
+        seqOpts.storage = dbPath;
+    } else {
+        let connectionHint = '';
+        if(seqOpts.host !== undefined) {
+            connectionHint = replaceChars(seqOpts.host, 3, {replace: 'numeric'});
+        }
+        if(seqOpts.port !== undefined) {
+            connectionHint = `${connectionHint}:${replaceChars(seqOpts.port.toString(), 2)}`;
+        }
+        if(seqOpts.database !== undefined) {
+            connectionHint = `${connectionHint}/${seqOpts.database}`
+        }
+        logger.debug(`Using ${seqOpts.dialect.toUpperCase()} at ${connectionHint}`)
+    }
+
     const sequelize = new Sequelize({
-        dialect: 'sqlite',
-        storage: dbPath,
-        logging: logOption,
+        ...seqOpts,
+        logging: logOption
     });
 
     setupMappings(sequelize);

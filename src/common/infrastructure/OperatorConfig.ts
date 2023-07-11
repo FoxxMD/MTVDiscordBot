@@ -1,5 +1,6 @@
 import YamlConfigDocument from "../config/YamlConfigDocument.js";
 import {LoggingOptions} from "./Logging.js";
+import {Options} from "sequelize/types/sequelize.js";
 
 export class YamlOperatorConfigDocument extends YamlConfigDocument<OperatorConfig> {
 
@@ -43,6 +44,10 @@ export interface StrongCredentials extends Credentials {
     discord: DiscordCredentials
 }
 
+export interface DatabaseConfig extends Pick<Options, 'username' | 'password' | 'host' | 'port' | 'database'> {
+    dialect: 'sqlite' | 'mariadb'
+}
+
 export interface OperatorConfig extends OperatorJsonConfig {
     credentials: StrongCredentials
 }
@@ -53,4 +58,5 @@ export interface OperatorJsonConfig {
      * */
     logging?: LoggingOptions,
     credentials?: Credentials
+    database?: DatabaseConfig
 }

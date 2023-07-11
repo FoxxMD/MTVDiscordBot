@@ -199,3 +199,29 @@ export const parseUrl = (url: string) => {
     const normalized = normalizeUrl(url, {removeTrailingSlash: true, normalizeProtocol: true, forceHttps: true});
     return new URL(normalized);
 }
+
+export interface ReplaceOptions {
+    replaceFrom?: 'start' | 'end'
+    replaceWith?: string
+    replace?: 'any' | 'alphanumeric' | 'alpha' | 'numeric'
+}
+
+export const replaceChars = (str: string, visibleCount: number, options?: ReplaceOptions) => {
+    const {
+        replaceFrom = 'start',
+        replaceWith = '*',
+        replace = 'any'
+    } = options || {};
+
+    let replaceChar = `\\S`;
+    if(replace === 'alphanumeric') {
+        replaceChar = `\\w`;
+    } else if(replace === 'alpha') {
+        replaceChar = `[a-zA-Z]`
+    } else if(replace === 'numeric') {
+        replaceChar = '\\d';
+    }
+
+    const reg: RegExp = replaceFrom === 'start' ? new RegExp(`${replaceChar}(?=\\S{${visibleCount}})`, 'gi') : new RegExp(`(?<=\\S{${visibleCount}})${replaceChar}`, 'gi')
+    return str.replace(reg, replaceWith);
+}
