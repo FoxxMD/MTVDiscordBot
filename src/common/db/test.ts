@@ -7,6 +7,8 @@ import {Video} from "./models/video.js";
 import {VideoSubmission} from "./models/videosubmission.js";
 import {Guild} from "./models/Guild.js";
 import {ShowcasePost} from "./models/ShowcasePost.js";
+import {DiscordMessageInfo} from "./models/DiscordMessageInfo.js";
+import dayjs from "dayjs";
 
 export const sandbox = async (db: Sequelize) => {
 
@@ -61,16 +63,26 @@ export const sandbox = async (db: Sequelize) => {
             creatorId: creator.id,
             url: 'https://youtube.com/123467'
         });
+        const subMessage = await DiscordMessageInfo.create({
+            messageId: dayjs().unix().toString(),
+            guildId: guild.id,
+            channelId: '123456'
+        })
         const [submission] = await VideoSubmission.upsert({
-            messageId: '1234',
+            messageInfoId: subMessage.id,
             guildId: guild.id,
             userId: user.id,
             videoId: video.id,
             url: 'https://reddit.com/r/mealtimevideos/test'
         });
 
+        const showcaseMessage = await DiscordMessageInfo.create({
+            messageId: dayjs().unix().toString(),
+            guildId: guild.id,
+            channelId: '123456'
+        })
         const [showcase] = await ShowcasePost.upsert({
-            messageId: '12347',
+            messageInfoId: showcaseMessage.id,
             guildId: guild.id,
             userId: user.id,
             videoId: video.id,

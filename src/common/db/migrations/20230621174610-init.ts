@@ -135,13 +135,9 @@ const migration: Migration = {
                 primaryKey: true,
                 type: Sequelize.INTEGER.UNSIGNED
             },
-            messageId: {
+            messageInfoId: {
                 type: Sequelize.STRING,
                 allowNull: false,
-            },
-            channelId: {
-                type: Sequelize.STRING,
-                allowNull: false
             },
             videoId: {
                 type: Sequelize.INTEGER.UNSIGNED,
@@ -183,7 +179,7 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('VideoSubmissions', ['videoId', 'guildId', 'messageId', 'userId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('VideoSubmissions', ['videoId', 'guildId', 'messageInfoId', 'userId'], {type: 'UNIQUE'});
         await queryInterface.addIndex('VideoSubmissions', ['url']);
         await queryInterface.addIndex('VideoSubmissions', ['videoId']);
 
@@ -271,11 +267,9 @@ const migration: Migration = {
                 primaryKey: true,
                 type: Sequelize.INTEGER.UNSIGNED
             },
-            messageId: {
-                type: Sequelize.STRING
-            },
-            channelId: {
-                type: Sequelize.STRING
+            messageInfoId: {
+                type: Sequelize.STRING,
+                allowNull: false,
             },
             videoId: {
                 type: Sequelize.INTEGER.UNSIGNED
@@ -302,7 +296,7 @@ const migration: Migration = {
             }
         });
 
-        await queryInterface.addIndex('ShowcasePosts', ['videoId', 'guildId', 'messageId', 'userId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('ShowcasePosts', ['videoId', 'guildId', 'messageInfoId', 'userId'], {type: 'UNIQUE'});
         await queryInterface.addIndex('ShowcasePosts', ['url']);
         await queryInterface.addIndex('ShowcasePosts', ['videoId']);
 
@@ -420,6 +414,37 @@ const migration: Migration = {
             },
         });
         await queryInterface.addIndex('UserTrustLevels', ['userId'], {type: 'UNIQUE'});
+
+        await queryInterface.createTable('DiscordMessageInfos', {
+            id: {
+                allowNull: false,
+                autoIncrement: true,
+                primaryKey: true,
+                type: Sequelize.INTEGER.UNSIGNED
+            },
+            channelId: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            messageId: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true
+            },
+            guildId: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            }
+        });
+        await queryInterface.addIndex('DiscordMessageInfos', ['channelId', 'messageId', 'guildId'], {type: 'UNIQUE'});
     },
     async down(queryInterface, Sequelize) {
         await queryInterface.dropTable('Guilds');
@@ -431,6 +456,7 @@ const migration: Migration = {
         await queryInterface.dropTable('UserCreators');
         await queryInterface.dropTable('SubmissionTrustLevels');
         await queryInterface.dropTable('UserTrustLevels');
+        await queryInterface.dropTable('DiscordMessageInfos');
     }
 };
 module.exports = {up: migration.up, down: migration.down};

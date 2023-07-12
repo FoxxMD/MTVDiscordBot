@@ -5,19 +5,19 @@ import {
   CreationOptional,
   DataTypes,
   Sequelize,
-  ForeignKey, NonAttribute, BelongsToGetAssociationMixin
+  ForeignKey, NonAttribute, BelongsToGetAssociationMixin, HasOneGetAssociationMixin, HasOneCreateAssociationMixin
 } from 'sequelize';
 import {Video} from "./video.js";
 import {User} from "./user.js";
 import {VideoSubmission} from "./videosubmission.js";
 import {Guild} from "./Guild.js";
 import {Client, TextChannel} from "discord.js";
+import {DiscordMessageInfo} from "./DiscordMessageInfo.js";
 
 export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCreationAttributes<ShowcasePost>> {
 
   declare id: CreationOptional<number>;
-  declare messageId: string;
-  declare channelId: string;
+  declare messageInfoId: ForeignKey<DiscordMessageInfo['id']>;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
@@ -32,17 +32,22 @@ export class ShowcasePost extends Model<InferAttributes<ShowcasePost>, InferCrea
   declare getGuild: BelongsToGetAssociationMixin<Guild>;
   declare getSubmission: BelongsToGetAssociationMixin<VideoSubmission>;
 
+  declare getMessage: HasOneGetAssociationMixin<DiscordMessageInfo>
+  declare createMessage: HasOneCreateAssociationMixin<DiscordMessageInfo>
+
   declare guild: NonAttribute<Guild>;
   declare user: NonAttribute<User>;
   declare video: NonAttribute<Video>;
   declare submission?: NonAttribute<VideoSubmission>
+  declare message: NonAttribute<DiscordMessageInfo>
 
   getDiscordMessage = async (client: Client) => {
-    const channel = client.channels.cache.get(this.channelId) as TextChannel;
-    return await channel.messages.fetch(this.messageId);
+    const msgInfo = await this.getMessage();
+    return await msgInfo.getDiscordMessage(client);
   }
-  getDiscordMessageLink = () => {
-    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
+  getDiscordMessageLink = async () => {
+    const msgInfo = await this.getMessage();
+    return msgInfo.getLink();
   }
 }
 
@@ -54,8 +59,7 @@ export const init = (sequelize: Sequelize) => {
       autoIncrement: true,
       primaryKey: true
     },
-    channelId: DataTypes.STRING,
-    messageId: DataTypes.STRING,
+    messageInfoId: DataTypes.INTEGER.UNSIGNED,
     guildId: DataTypes.STRING,
     videoId: DataTypes.INTEGER,
     submissionId: DataTypes.INTEGER,
@@ -73,7 +77,7 @@ export const init = (sequelize: Sequelize) => {
       },
       {
         unique: true,
-        fields: ['videoId', 'guildId', 'messageId', 'userId']
+        fields: ['videoId', 'guildId', 'messageInfoId', 'userId']
       },
       {
         unique: false,
@@ -88,4 +92,11 @@ export const associate = () => {
   ShowcasePost.belongsTo(User, {targetKey: 'id', as: 'user'});
   ShowcasePost.belongsTo(Guild, {targetKey: 'id', as: 'guild'});
   ShowcasePost.belongsTo(VideoSubmission, {targetKey: 'id', as: 'submission'});
+  ShowcasePost.hasOne(DiscordMessageInfo, {
+    foreignKey: 'id',
+    sourceKey: 'messageInfoId',
+    onDelete: 'CASCADE',
+    foreignKeyConstraint: true,
+    as: 'message'
+  });
 }

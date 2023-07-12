@@ -33,6 +33,7 @@ import {ErrorWithCause} from "pony-cause";
 import {commaListsAnd} from "common-tags";
 import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
+import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
 
 export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
 
@@ -79,10 +80,15 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
 
         await submissionMessage.startThread({name: video.title});
 
-        await VideoSubmission.create({
+        const message = await DiscordMessageInfo.create({
             messageId: submissionMessage.id,
-            guildId: interaction.guild.id,
             channelId: submissionMessage.channelId,
+            guildId: interaction.guild.id
+        });
+
+        await VideoSubmission.create({
+            guildId: interaction.guild.id,
+            messageInfoId: message.id,
             videoId: videoEntity.id,
             userId: user.id,
             upvotes: 0,
@@ -124,13 +130,14 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
 
             const submitter = await asub.getUser();
 
-            const channel = await dguild.channels.fetch(asub.channelId) as TextChannel;
+            //const channel = await dguild.channels.fetch(asub.channelId) as TextChannel;
             let message: Message;
+            let msgInfo = await asub.getMessage();
             try {
-                message = await channel.messages.fetch(asub.messageId);
+                message = await asub.getDiscordMessage(dguild.client);
             } catch (e) {
                 if(e.code === 10008) {
-                    logger.warn(`No message with ID ${asub.messageId} exists for => ${truncateStringToLength(30)((await asub.getVideo()).title)} -- assuming it was deleted! Removing Submission`);
+                    logger.warn(`No message with ID ${msgInfo.messageId} exists for => ${truncateStringToLength(30)((await asub.getVideo()).title)} -- assuming it was deleted! Removing Submission`);
                     await asub.destroy();
                 } else {
                     logger.warn(new ErrorWithCause(`An error preventing fetching Discord Message`, {cause: e}));
@@ -183,7 +190,7 @@ export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: 
                     await safetyChannel.send({content: msg, flags: 4});
                 }
                 asub.active = false;
-                asub.messageId = undefined;
+                await asub.setMessage(null);
                 await message.delete();
                 await asub.save();
                 continue;

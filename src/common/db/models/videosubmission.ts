@@ -1,11 +1,16 @@
 import {
-  Model,
-  InferAttributes,
-  InferCreationAttributes,
-  CreationOptional,
-  DataTypes,
-  Sequelize,
-  ForeignKey, NonAttribute, BelongsToGetAssociationMixin, HasOneGetAssociationMixin
+    Model,
+    InferAttributes,
+    InferCreationAttributes,
+    CreationOptional,
+    DataTypes,
+    Sequelize,
+    ForeignKey,
+    NonAttribute,
+    BelongsToGetAssociationMixin,
+    HasOneGetAssociationMixin,
+    HasOneCreateAssociationMixin,
+    Association, HasOneSetAssociationMixin
 } from 'sequelize';
 import {Video} from "./video.js";
 import {User} from "./user.js";
@@ -16,6 +21,7 @@ import {Client, TextChannel, time, userMention} from "discord.js";
 import {durationToTimestamp} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {commaListsAnd} from "common-tags";
+import {DiscordMessageInfo} from "./DiscordMessageInfo.js";
 
 export interface VideoSubmissionSummaryOptions {
   showOC?: boolean
@@ -34,8 +40,7 @@ export interface ChannelSummaryOptions {
 export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, InferCreationAttributes<VideoSubmission>> {
 
   declare id: CreationOptional<number>;
-  declare messageId: CreationOptional<string>;
-  declare channelId: string;
+  declare messageInfoId: ForeignKey<DiscordMessageInfo['id']>;
   declare guildId: ForeignKey<Guild['id']>;
   declare videoId: ForeignKey<Video['id']>;
   declare userId: ForeignKey<User['id']>;
@@ -54,18 +59,28 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
   declare getGuild: BelongsToGetAssociationMixin<Guild>;
   declare getShowcase: HasOneGetAssociationMixin<Video>;
 
+  declare getMessage: HasOneGetAssociationMixin<DiscordMessageInfo>;
+  declare createMessage: HasOneCreateAssociationMixin<DiscordMessageInfo>;
+  declare setMessage: HasOneSetAssociationMixin<DiscordMessageInfo, number>;
+
   declare guild: NonAttribute<Guild>
   declare user: NonAttribute<User>;
   declare video: NonAttribute<Video>;
   declare showcase?: NonAttribute<ShowcasePost>
+  declare message: NonAttribute<DiscordMessageInfo>
 
-  getDiscordMessage = async (client: Client) => {
-      const channel = client.channels.cache.get(this.channelId) as TextChannel;
-      return await channel.messages.fetch(this.messageId);
-  }
-  getDiscordMessageLink = () => {
-    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
-  }
+    declare static associations: {
+      message: Association<VideoSubmission, DiscordMessageInfo>
+    }
+
+    getDiscordMessage = async (client: Client) => {
+        const msgInfo = await this.getMessage();
+        return await msgInfo.getDiscordMessage(client);
+    }
+    getDiscordMessageLink = async () => {
+        const msgInfo = await this.getMessage();
+        return msgInfo.getLink();
+    }
 
   isOC = async () => {
     const user = await this.getUser();
@@ -114,7 +129,7 @@ export class VideoSubmission extends Model<InferAttributes<VideoSubmission>, Inf
         }
 
         if (showDiscord) {
-            parts.push(this.getDiscordMessageLink());
+            parts.push(await this.getDiscordMessageLink());
         }
 
         return parts.join(' ');
@@ -169,8 +184,7 @@ export const init = (sequelize: Sequelize) => {
       autoIncrement: true,
       primaryKey: true
     },
-    messageId: DataTypes.STRING,
-    channelId: DataTypes.STRING,
+    messageInfoId: DataTypes.INTEGER.UNSIGNED,
     guildId: DataTypes.STRING,
     videoId: DataTypes.INTEGER,
     userId: DataTypes.INTEGER,
@@ -207,7 +221,7 @@ export const init = (sequelize: Sequelize) => {
       },
       {
         unique: true,
-        fields: ['videoId', 'guildId', 'messageId', 'userId']
+        fields: ['videoId', 'guildId', 'messageInfoId', 'userId']
       },
       {
         unique: false,
@@ -222,4 +236,11 @@ export const associate = () => {
   VideoSubmission.belongsTo(User, {targetKey: 'id', as: 'user'});
   VideoSubmission.belongsTo(Video, {targetKey: 'id', as: 'video'});
   VideoSubmission.hasOne(ShowcasePost, {foreignKey: 'submissionId', as: 'showcase'});
+  VideoSubmission.hasOne(DiscordMessageInfo, {
+      foreignKey: 'id',
+      sourceKey: 'messageInfoId',
+      onDelete: 'CASCADE',
+      as: 'message',
+      foreignKeyConstraint: true
+  });
 }

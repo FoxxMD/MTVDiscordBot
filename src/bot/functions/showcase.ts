@@ -23,6 +23,7 @@ import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
 import {ErrorWithCause} from "pony-cause";
 import {mergeArr} from "../../utils/index.js";
 import {Video} from "../../common/db/models/video.js";
+import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
 
 export interface ShowcaseOptions
 {
@@ -115,10 +116,15 @@ export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger
 
         await submissionMessage.startThread({name: video.title});
 
-        const post = await ShowcasePost.create({
+        const message = await DiscordMessageInfo.create({
             messageId: submissionMessage.id,
-            guildId: dguild.id,
             channelId: submissionMessage.channelId,
+            guildId: dguild.id
+        });
+
+        const post = await ShowcasePost.create({
+            messageInfoId: message.id,
+            guildId: dguild.id,
             videoId: video.id,
             userId: submitter !== undefined ? submitter.id : undefined,
             submissionId: videoSubmission !== undefined ? videoSubmission.id : undefined,

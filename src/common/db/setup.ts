@@ -10,6 +10,7 @@ import * as showcase from './models/ShowcasePost.js';
 import * as guildSettings from './models/GuildSetting.js';
 import * as specialRole from './models/SpecialRole.js';
 import * as allowDenyModifier from './models/AllowDenyModifier.js';
+import * as discMessage from './models/DiscordMessageInfo.js';
 
 export const setupMappings = (db: Sequelize) => {
     user.init(db);
@@ -23,6 +24,7 @@ export const setupMappings = (db: Sequelize) => {
     guildSettings.init(db);
     specialRole.init(db);
     allowDenyModifier.init(db);
+    discMessage.init(db);
 
     guild.associate();
     guildSettings.associate();
@@ -35,4 +37,5 @@ export const setupMappings = (db: Sequelize) => {
     showcase.associate();
     specialRole.associate();
     allowDenyModifier.associate();
+    discMessage.associate();
 }
