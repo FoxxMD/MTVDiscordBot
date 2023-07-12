@@ -6,6 +6,9 @@
                 "discord": {
                     "$ref": "#/definitions/DiscordCredentials"
                 },
+                "reddit": {
+                    "$ref": "#/definitions/RedditCredentials"
+                },
                 "vimeo": {
                     "$ref": "#/definitions/VimeoCredentials"
                 },
@@ -13,6 +16,42 @@
                     "type": "string"
                 }
             },
+            "type": "object"
+        },
+        "DatabaseConfig": {
+            "properties": {
+                "database": {
+                    "description": "The name of the database",
+                    "type": "string"
+                },
+                "dialect": {
+                    "enum": [
+                        "mariadb",
+                        "sqlite"
+                    ],
+                    "type": "string"
+                },
+                "host": {
+                    "default": "'localhost'",
+                    "description": "The host of the relational database.",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "The password which is used to authenticate against the database.",
+                    "type": "string"
+                },
+                "port": {
+                    "description": "The port of the relational database.",
+                    "type": "number"
+                },
+                "username": {
+                    "description": "The username which is used to authenticate against the database.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "dialect"
+            ],
             "type": "object"
         },
         "DiscordCredentials": {
@@ -75,6 +114,29 @@
             },
             "type": "object"
         },
+        "RedditCredentials": {
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "accessToken",
+                "clientId",
+                "clientSecret",
+                "refreshToken"
+            ],
+            "type": "object"
+        },
         "VimeoCredentials": {
             "properties": {
                 "clientId": {
@@ -96,6 +158,9 @@
     "properties": {
         "credentials": {
             "$ref": "#/definitions/Credentials"
+        },
+        "database": {
+            "$ref": "#/definitions/DatabaseConfig"
         },
         "logging": {
             "$ref": "#/definitions/LoggingOptions",
