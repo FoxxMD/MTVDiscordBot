@@ -107,6 +107,13 @@ export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubm
 
 export type SpecialRoleType = 'approved' | 'janitor' | 'tos' | 'contentCreator';
 
+export type AllowDenyType = 'allow' | 'deny';
+
+export const AllowDenyTypes = {
+    ALLOW: 'allow' as AllowDenyType,
+    DENY: 'deny' as AllowDenyType
+}
+
 export interface numberFormatOptions {
     toFixed: number,
     defaultVal?: any,

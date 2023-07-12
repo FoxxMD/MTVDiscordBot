@@ -16,7 +16,11 @@ import {
     BelongsToManyGetAssociationsMixin,
     HasOneCreateAssociationMixin,
     HasOneGetAssociationMixin,
-    HasOneSetAssociationMixin, ForeignKey, BelongsToGetAssociationMixin, BelongsToManyRemoveAssociationMixin
+    HasOneSetAssociationMixin,
+    ForeignKey,
+    BelongsToGetAssociationMixin,
+    BelongsToManyRemoveAssociationMixin,
+    Transaction, Op, fn
 } from 'sequelize';
 import {VideoSubmission} from "./videosubmission.js";
 import {Creator} from "./creator.js";
@@ -24,6 +28,8 @@ import {UserTrustLevel} from "./UserTrustLevel.js";
 import {Guild} from "./Guild.js";
 import {SpecialRoleType} from "../../infrastructure/Atomic.js";
 import {ShowcasePost} from "./ShowcasePost.js";
+import {AllowDenyModifier, AllowDenyModifierData} from "./AllowDenyModifier.js";
+import dayjs, {Dayjs} from "dayjs";
 
 export class User extends Model<InferAttributes<User, {
     omit: 'submissions' | 'creators' | 'trustLevel'
@@ -58,17 +64,23 @@ export class User extends Model<InferAttributes<User, {
 
     declare getGuild: BelongsToGetAssociationMixin<Guild>;
 
+    declare getModifiers: HasManyGetAssociationsMixin<AllowDenyModifier>;
+    declare getActiveModifiers: HasManyGetAssociationsMixin<AllowDenyModifier>;
+    declare createModifier: HasManyCreateAssociationMixin<AllowDenyModifier, 'modifiedThingId'>;
+
     declare submissions?: NonAttribute<VideoSubmission[]>;
     declare showcases?: NonAttribute<ShowcasePost[]>;
     declare creators?: NonAttribute<Creator[]>;
     declare trustLevel: NonAttribute<UserTrustLevel>;
     declare guild: NonAttribute<Guild>
+    declare modifiers?: NonAttribute<AllowDenyModifier[]>;
 
     declare static associations: {
-        submissions: Association<User, VideoSubmission>;
-        showcases: Association<User, ShowcasePost>;
+        submissions: Association<User, VideoSubmission>
+        showcases: Association<User, ShowcasePost>
         creators: Association<User, Creator>
         trustLevel: Association<User, UserTrustLevel>
+        modifiers: Association<User, AllowDenyModifier>
     };
 
     isRateLimited = async (date: Date) => {
@@ -87,6 +99,47 @@ export class User extends Model<InferAttributes<User, {
         const userLevel = await this.getTrustLevel();
         const level = await userLevel.getLevel();
         return level;
+    }
+
+    getActiveModifier = async () => {
+        const mods = await this.getActiveModifiers();
+        if(mods.length > 0) {
+            return mods[0];
+        }
+        return undefined;
+    }
+
+    expireModifiers = async (at: Dayjs = dayjs(), transaction?: Transaction) => {
+        const t = transaction ?? await this.sequelize.transaction();
+        const activeMods = await this.getActiveModifiers();
+        for (const a of activeMods) {
+            a.expiresAt = at.toDate();
+            await a.save({transaction: t});
+        }
+        if (activeMods.length > 0 && transaction === undefined) {
+            try {
+                await t.commit();
+            } catch (e) {
+                await t.rollback();
+                throw e;
+            }
+        }
+    }
+
+    createNewModifier = async (data: AllowDenyModifierData) => {
+        const t = await this.sequelize.transaction();
+        await this.expireModifiers(undefined, t);
+        const newModifier = await this.createModifier({
+            modifiedThingType: 'user',
+            ...data
+        }, {transaction: t});
+        try {
+            await t.commit();
+            return newModifier;
+        } catch (e) {
+            await t.rollback();
+            throw e;
+        }
     }
 }
 
@@ -132,4 +185,28 @@ export const associate = () => {
     User.belongsToMany(Creator, {through: 'UserCreators'});
     User.hasOne(UserTrustLevel, {foreignKey: 'userId', as: 'trustLevel'});
     User.belongsTo(Guild, {as: 'guild'});
+    User.hasMany(AllowDenyModifier, {
+        foreignKey: 'modifiedThingId',
+        as: 'modifiers',
+        scope: {
+            modifiedThingType: 'user'
+        }
+    });
+    User.hasMany(AllowDenyModifier, {
+        foreignKey: 'modifiedThingId',
+        as: 'activeModifiers',
+        scope: {
+            modifiedThingType: 'user',
+            expiresAt: {
+                [Op.or]: [
+                    {
+                        [Op.is]: null
+                    },
+                    {
+                        [Op.gt]: fn('NOW')
+                    }
+                ]
+            }
+        }
+    })
 }
