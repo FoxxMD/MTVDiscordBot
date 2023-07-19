@@ -22,6 +22,7 @@ import {
 import {
     checkLengthConstraints
 } from "../../../bot/functions/userSubmissionFuncs.js";
+import {videoDetailsToUrl} from "../../../common/contentPlatforms/UrlParser.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -48,7 +49,8 @@ module.exports = {
 
         const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
-        const [deets, existingVideo] = await manager.getVideoDetails(url);
+        const [deets, urlDetails, existingVideo] = await manager.getVideoDetails(url);
+        const sanitizedUrl = urlDetails !== undefined ? videoDetailsToUrl(urlDetails) : url;
 
         if(!AllowedVideoProviders.includes(deets.platform)) {
             return await interaction.reply(
@@ -82,7 +84,7 @@ module.exports = {
             if (interaction.replied) {
                 return;
             }
-            await addFirehoseVideo(interaction, deets as MinimalVideoDetails, user);
+            await addFirehoseVideo(interaction, sanitizedUrl, deets as MinimalVideoDetails, user);
         } else {
 
             const titleComp = new TextInputBuilder()
@@ -127,7 +129,7 @@ module.exports = {
                 if (interaction.replied) {
                     return;
                 }
-                await addFirehoseVideo(modalRes, deets as MinimalVideoDetails, user);
+                await addFirehoseVideo(modalRes, sanitizedUrl, deets as MinimalVideoDetails, user);
             } catch (e) {
                 throw e;
             }

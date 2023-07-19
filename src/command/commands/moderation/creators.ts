@@ -64,7 +64,7 @@ module.exports = {
 
         const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
-        const [deets, video] = await manager.getVideoDetails(link);
+        const [deets, urlDetails, video] = await manager.getVideoDetails(link);
 
         if (!ApiSupportedPlatforms.includes(deets.platform)) {
             return await interaction.reply({

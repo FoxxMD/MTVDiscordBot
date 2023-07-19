@@ -35,7 +35,7 @@ import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
 
-export const addFirehoseVideo = async (interaction: InteractionLike, video: MinimalVideoDetails, user: User) => {
+export const addFirehoseVideo = async (interaction: InteractionLike, url: string, video: MinimalVideoDetails, user: User) => {
 
     const firehoseChannel = await GuildSetting.findOne({
         where: {
@@ -67,7 +67,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
             detailParts.push(creatorStr);
         }
         detailParts.push(`Submitted By: <@${interaction.user.id}>`)
-        detailParts.push(`Link: ${videoEntity.url}`);
+        detailParts.push(`Link: ${url}`);
         detailParts.push(`Voting Active: **Yes** (Until ${time(dayjs().add(24, 'hours').toDate())})`)
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
@@ -91,6 +91,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, video: Mini
             messageInfoId: message.id,
             videoId: videoEntity.id,
             userId: user.id,
+            url,
             upvotes: 0,
             downvotes: 0,
             active: true

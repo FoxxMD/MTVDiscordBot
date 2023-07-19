@@ -27,7 +27,7 @@ export const getHotToVideos = async (bot: Bot): Promise<RedditVideo[]> => {
 
     for (const submission of extLinkSubmissions) {
             let video: Video;
-            const [deets, existingVideo] = await manager.getVideoDetails(submission.url);
+            const [deets, urlDetails, existingVideo] = await manager.getVideoDetails(submission.url);
             if (existingVideo === undefined) {
                 video = await getOrInsertVideo(deets as MinimalVideoDetails);
             } else {

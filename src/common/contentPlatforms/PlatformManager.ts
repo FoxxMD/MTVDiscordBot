@@ -14,6 +14,7 @@ import {VimeoClient} from "./clients/VimeoClient.js";
 import {getCreatorByDetails, getVideoByVideoId, upsertVideoCreator} from "../../bot/functions/repository.js";
 import {parseUrl} from "../../utils/StringUtils.js";
 import {Video} from "../db/models/video.js";
+import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
 
 export class PlatformManager {
 
@@ -35,7 +36,7 @@ export class PlatformManager {
         }
     }
 
-    async getVideoDetails(urlVal: string): Promise<[Partial<VideoDetails>, Video?]> {
+    async getVideoDetails(urlVal: string): Promise<[ Partial<VideoDetails>, VideoInfo<Record<string, any>, string>?, Video?]> {
         const url = parseUrl(urlVal);
         let details: Partial<VideoDetails> = {
             id: url.toString(),
@@ -48,7 +49,7 @@ export class PlatformManager {
             const existingVideo = await getVideoByVideoId(urlDetails.id, urlDetails.provider);
             if(existingVideo !== undefined) {
                 details = await existingVideo.toVideoDetails();
-                return [details, existingVideo];
+                return [details, urlDetails, existingVideo];
             }
             details.id = urlDetails.id;
             details.platform = urlDetails.provider as Platform;
@@ -74,7 +75,7 @@ export class PlatformManager {
             }
         }
 
-        return [details, undefined];
+        return [details, urlDetails, undefined];
     }
 
     async getChannelDetails(platform: string, channelId: string): Promise<FullCreatorDetails | undefined> {
