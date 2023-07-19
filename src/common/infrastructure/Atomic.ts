@@ -1,5 +1,5 @@
 import {MESSAGE} from 'triple-beam';
-import {CacheType, ChatInputCommandInteraction, ModalSubmitInteraction} from "discord.js";
+import {CacheType, ChatInputCommandInteraction, MessageComponentInteraction, ModalSubmitInteraction} from "discord.js";
 
 export type LogLevel = "error" | "warn" | "info" | "verbose" | "debug";
 export const logLevels = ['error', 'warn', 'info', 'verbose', 'debug'];
@@ -103,7 +103,7 @@ export interface RegExResult {
     named: NamedGroup
 }
 
-export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType>;
+export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType> | MessageComponentInteraction<CacheType>;
 
 export type SpecialRoleType = 'approved' | 'janitor' | 'tos' | 'contentCreator';
 

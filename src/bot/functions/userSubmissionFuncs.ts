@@ -1,5 +1,14 @@
 import {User} from "../../common/db/models/user.js";
-import {CacheType, ChatInputCommandInteraction, GuildMember, time} from "discord.js";
+import {
+    CacheType,
+    ChatInputCommandInteraction,
+    GuildMember,
+    time,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    SlashCommandBuilder, MessageComponentInteraction,
+} from "discord.js";
 import {oneLine} from 'common-tags';
 import {getCreatorByDetails, getUserLastSubmittedVideo} from "./repository.js";
 import dayjs, {Dayjs} from "dayjs";
@@ -14,6 +23,7 @@ import {durationToHuman, formatNumber} from "../../utils/StringUtils.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 import {memberHasRoleType} from "./userUtil.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
+import {MessageActionRowComponentBuilder} from "@discordjs/builders";
 
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
@@ -120,5 +130,52 @@ export const checkRules = async (interaction: InteractionLike, user: User) => {
             `,
             ephemeral: true
         });
+    }
+}
+
+export const confirmTimestamp = async (interaction: InteractionLike, timestamp: number): Promise<[boolean | 'remove', MessageComponentInteraction?]> => {
+    const confirm = new ButtonBuilder()
+        .setCustomId('confirm')
+        .setLabel('Yes, keep timestamp')
+        .setStyle(ButtonStyle.Primary);
+
+    const confirmRemove = new ButtonBuilder()
+        .setCustomId('remove')
+        .setLabel('No, remove timestamp')
+        .setStyle(ButtonStyle.Secondary);
+
+    const cancel = new ButtonBuilder()
+        .setCustomId('cancel')
+        .setLabel(`No, I'll resubmit`)
+        .setStyle(ButtonStyle.Secondary);
+
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>()
+        .addComponents(confirm, confirmRemove, cancel);
+
+    const dur = durationToHuman(dayjs.duration({seconds: timestamp}));
+
+    const response = await interaction.reply({
+        content: `Your URL contains a **timestamp** that will start this video at **${dur}**. Please confirm this is intentional.`,
+        components: [row],
+        ephemeral: true
+    });
+
+    const collectorFilter = i => i.user.id === interaction.user.id;
+
+    try {
+        const confirmation = await response.awaitMessageComponent({filter: collectorFilter, time: 30000});
+        if (confirmation.customId === 'confirm') {
+            return [true, confirmation];
+        } else if (confirmation.customId === 'cancel') {
+            await confirmation.update({content: 'Submit Cancelled', components: []});
+            return [false];
+        }
+        return ['remove', confirmation];
+    } catch (e) {
+        await interaction.editReply({
+            content: 'Confirmation not received within 30 seconds, cancelling',
+            components: [],
+        });
+        return [false];
     }
 }

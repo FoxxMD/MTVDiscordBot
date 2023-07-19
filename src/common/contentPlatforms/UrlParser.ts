@@ -15,11 +15,20 @@ import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
 
 export const urlParser = videoUrlParser;
 
-export const videoDetailsToUrl = (data: VideoInfo<Record<string, any>>): string => {
+export interface VideoDetailsToUrlOptions {
+    timestamp?: boolean
+}
+
+export const videoDetailsToUrl = (data: VideoInfo<Record<string, any>>, opts?: VideoDetailsToUrlOptions): string => {
+    const {
+        timestamp = true,
+    } = opts || {};
+    const params: Record<string, any> = {};
+    if(timestamp) {
+        params.start = data.params?.start;
+    }
     return urlParser.create({
         videoInfo: data,
-        params: {
-            start: data.params?.start
-        }
+        params,
     });
 }

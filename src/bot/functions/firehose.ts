@@ -71,8 +71,15 @@ export const addFirehoseVideo = async (interaction: InteractionLike, url: string
         detailParts.push(`Voting Active: **Yes** (Until ${time(dayjs().add(24, 'hours').toDate())})`)
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
+        const subUrl: string = submissionMessage.url;
 
-        await interaction.reply({content: `Video Submitted! ${submissionMessage.url}`, ephemeral: true});
+        if(interaction.isMessageComponent()) {
+            await interaction.update({content: `Video Submitted! ${subUrl}`, components: []});
+        } else if(!interaction.replied) {
+            await interaction.reply({content: `Video Submitted! ${subUrl}`, ephemeral: true});
+        } else {
+            await interaction.followUp({content: `Video Submitted! ${subUrl}`, ephemeral: true});
+        }
 
         await submissionMessage.react(VideoReactions.UP);
         await submissionMessage.react(VideoReactions.DOWN);

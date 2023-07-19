@@ -17,14 +17,14 @@ import {markdownTag, timestampToDuration} from "../../../utils/StringUtils.js";
 import dayjs from "dayjs";
 import {addFirehoseVideo} from "../../../bot/functions/firehose.js";
 import {
-    AllowedVideoProviders,
+    AllowedVideoProviders, InteractionLike,
     MinimalCreatorDetails,
     MinimalVideoDetails
 } from "../../../common/infrastructure/Atomic.js";
 import {
     checkAge,
     checkLengthConstraints, checkRules,
-    checkSelfPromotion,
+    checkSelfPromotion, confirmTimestamp,
     rateLimitUser
 } from "../../../bot/functions/userSubmissionFuncs.js";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
@@ -68,7 +68,7 @@ module.exports = {
         const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
         const [deets, urlDetails, existingVideo] = await manager.getVideoDetails(url);
-        const sanitizedUrl = urlDetails !== undefined ? videoDetailsToUrl(urlDetails) : url;
+        let sanitizedUrl = urlDetails !== undefined ? videoDetailsToUrl(urlDetails) : url;
 
         if(!AllowedVideoProviders.includes(deets.platform)) {
             return await interaction.reply(
@@ -116,7 +116,18 @@ module.exports = {
             if (interaction.replied) {
                 return;
             }
-            await addFirehoseVideo(interaction,  sanitizedUrl,deets as MinimalVideoDetails, user);
+            let interact: InteractionLike = interaction;
+            if(urlDetails !== undefined && urlDetails.params?.start !== undefined) {
+                const [timestampRes, confirmation] = await confirmTimestamp(interaction, urlDetails.params?.start as number);
+                if(timestampRes === false) {
+                    return;
+                }
+                if(timestampRes === 'remove') {
+                    sanitizedUrl = videoDetailsToUrl(urlDetails, {timestamp: false});
+                }
+                interact = confirmation;
+            }
+            await addFirehoseVideo(interact,  sanitizedUrl,deets as MinimalVideoDetails, user);
         } else {
 
             const titleComp = new TextInputBuilder()
