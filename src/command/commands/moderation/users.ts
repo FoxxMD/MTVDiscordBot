@@ -27,7 +27,7 @@ import {markdownTag} from "../../../utils/StringUtils.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {commaLists, stripIndent} from "common-tags";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
-import {getContentCreatorDiscordRole} from "../../../bot/functions/guildUtil.js";
+import {getContentCreatorDiscordRole, logToChannel} from "../../../bot/functions/guildUtil.js";
 import {ErrorWithCause} from "pony-cause";
 import {Creator} from "../../../common/db/models/creator.js";
 import {Op} from "sequelize";
@@ -94,6 +94,7 @@ module.exports = {
                 if(command === 'flag-expire') {
                     await assocUser.expireModifiers(undefined);
                     await assocUser.save();
+                    await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: Expired any existing flags on ${user.name}`);
                     await interact(interaction, {
                         content: `Expired any existing flags on ${user.name}`,
                         ephemeral: true
@@ -114,8 +115,10 @@ module.exports = {
                         await interact(interaction, {content: `Error occurred while committing changes: ${e.message}`, ephemeral: true});
                         return;
                     }
+                    const msg = `Added ${assocUser.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`;
+                    await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: ${msg}`);
                     await interact(interaction, {
-                        content: `Added ${assocUser.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`,
+                        content: msg,
                         ephemeral: true
                     });
                 }

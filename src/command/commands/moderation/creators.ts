@@ -27,7 +27,7 @@ import {markdownTag} from "../../../utils/StringUtils.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {commaLists, stripIndent} from "common-tags";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
-import {getContentCreatorDiscordRole} from "../../../bot/functions/guildUtil.js";
+import {getContentCreatorDiscordRole, logToChannel} from "../../../bot/functions/guildUtil.js";
 import {ErrorWithCause} from "pony-cause";
 import {Creator} from "../../../common/db/models/creator.js";
 import {Op} from "sequelize";
@@ -156,15 +156,19 @@ module.exports = {
                     try {
                         ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
                     } catch (e) {
-                        logger.warn(new ErrorWithCause('Could not add Content Creator discord role', {cause: e}));
+                        const err = new ErrorWithCause('User was successfully associated with creator but did not receive Content Creator role due to an error', {cause: e});
+                        logger.warn(err);
+                        await logToChannel(interaction.guild, GuildSettings.ERROR_CHANNEL, err);
                         return interaction.reply({
                             content: `User was successfully associated with creator but did not receive Content Creator role due to an error: ${e.message}`,
                             ephemeral: true
                         });
                     }
                     await (discordUser.roles as GuildMemberRoleManager).add(ccRole);
+                    const msg = `User ${assocUser.name} was successfully associated with Creator ${creator.name} and received the Content Creator role`;
+                    await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: ${msg}`);
                     return interaction.reply({
-                        content: `User was successfully associated with creator and received the Content Creator role`,
+                        content: msg,
                         ephemeral: true
                     });
                 }
@@ -173,9 +177,9 @@ module.exports = {
                 if (updatedExistingCreators.length !== existingCreators.length) {
                     await assocUser.removeCreator(creator);
                     await assocUser.save();
-                    replyParts.push('User was successfully disassociated from creator');
+                    replyParts.push(`User ${assocUser.name} was successfully disassociated from Creator ${creator.name}`);
                 } else {
-                    replyParts.push('User was already not associated with creator');
+                    replyParts.push(`User ${assocUser.name} was already not associated with Creator ${creator.name}`);
                 }
 
 
@@ -197,6 +201,7 @@ module.exports = {
                     }
                 }
 
+                await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: ${replyParts.join(' ')}`);
                 await interaction.reply({
                     content: replyParts.join(' '),
                     ephemeral: true
@@ -214,6 +219,7 @@ module.exports = {
                 if(command === 'flag-expire') {
                     await creator.expireModifiers(undefined);
                     await creator.save();
+                    await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: Expired any existing flags on ${creator.name}`);
                     await interact(interaction, {
                         content: `Expired any existing flags on ${creator.name}`,
                         ephemeral: true
@@ -234,8 +240,10 @@ module.exports = {
                         await interact(interaction, {content: `Error occurred while committing changes: ${e.message}`, ephemeral: true});
                         return;
                     }
+                    const msg = `Added ${creator.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`;
+                    await logToChannel(interaction.guild, GuildSettings.LOGGING_CHANNEL, `${interaction.member.user.username}: ${msg}`);
                     await interact(interaction, {
-                        content: `Added ${creator.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`,
+                        content: msg,
                         ephemeral: true
                     });
                 }
