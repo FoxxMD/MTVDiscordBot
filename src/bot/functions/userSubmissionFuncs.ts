@@ -24,6 +24,7 @@ import {VideoSubmission} from "../../common/db/models/videosubmission.js";
 import {memberHasRoleType} from "./userUtil.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {MessageActionRowComponentBuilder} from "@discordjs/builders";
+import {Creator} from "../../common/db/models/creator.js";
 
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
@@ -65,6 +66,20 @@ export const checkLengthConstraints = async (length: number, interaction: Intera
     }
 }
 
+export const checkCreatorBlacklisted = async (interaction: InteractionLike, creator: Creator) => {
+    const activeModifier = await creator.getActiveModifier();
+    if(activeModifier === undefined || activeModifier.flag === 'allow') {
+        return;
+    }
+    await interaction.reply({
+        content: oneLine`
+            The creator '${creator.name}' has been blacklisted and cannot be used for new submissions.
+            The blacklist expires ${activeModifier.expiresAt !== undefined ? time(activeModifier.expiresAt, 'R') : 'never'}. 
+            `,
+        ephemeral: true
+    });
+}
+
 export const checkSelfPromotion = async (interaction: InteractionLike, platform: string, details: MinimalCreatorDetails, user: User) => {
     const creator = await getCreatorByDetails(platform, details);
     const submissions = await VideoSubmission.findAll({where: {userId: user.id}, /*include: {all: true, nested: true}*/})
@@ -88,6 +103,20 @@ export const checkSelfPromotion = async (interaction: InteractionLike, platform:
     }
 }
 
+export const checkBlacklisted = async (interaction: InteractionLike, user: User) => {
+    const activeModifier = await user.getActiveModifier();
+    if(activeModifier === undefined || activeModifier.flag === 'allow') {
+        return;
+    }
+    await interaction.reply({
+        content: oneLine`
+            You are in jail and not allowed to make new submissions due to previous infractions.
+            Your sentence ends ${activeModifier.expiresAt !== undefined ? time(activeModifier.expiresAt, 'R') : 'never'}. 
+            `,
+        ephemeral: true
+    });
+}
+
 export const checkAge = async (interaction: InteractionLike, user: User) => {
     const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
     if(hasAllowedRole) {
@@ -104,7 +133,7 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
     if(waitingPeriodOver.isAfter(dayjs())) {
         await interaction.reply({
             content: oneLine`
-            In order to prevent spam new users must wait 24 hours after first interaction before they can submit videos.
+            In order to prevent spam new users must wait 24 hours after joining the server before they can submit videos.
             You may start submitting videos ${time(waitingPeriodOver.toDate(), 'R')}
             `,
             ephemeral: true

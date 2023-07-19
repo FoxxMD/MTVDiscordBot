@@ -22,7 +22,7 @@ import {
     MinimalVideoDetails
 } from "../../../common/infrastructure/Atomic.js";
 import {
-    checkAge,
+    checkAge, checkBlacklisted, checkCreatorBlacklisted,
     checkLengthConstraints, checkRules,
     checkSelfPromotion, confirmTimestamp,
     rateLimitUser
@@ -44,6 +44,10 @@ module.exports = {
         const user = await getOrInsertUser(interaction.member, interaction.guild);
         const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
 
+        await checkBlacklisted(interaction, user);
+        if(interaction.replied) {
+            return;
+        }
         await checkRules(interaction, user);
         if (interaction.replied) {
             return;
@@ -100,8 +104,12 @@ module.exports = {
         // can ignore self-promo if user is allowed
         if (!hasAllowedRole && deets.creator.id !== undefined) {
             // now check creator popularity (gated by allow role check to reduce platform api calls)
-            const popular = manager.checkPopularity(deets.platform, deets.creator as MinimalCreatorDetails);
-            if (!popular) {
+            const creator = await manager.upsertCreatorFromDetails(deets.platform, deets.creator as MinimalCreatorDetails);
+            await checkCreatorBlacklisted(interaction, creator);
+            if(interaction.replied) {
+                return;
+            }
+            if (!creator.popular) {
                 // either cannot get popularity from platform (api unsupported) or creator is not popular
                 // so check for self-promo
                 await checkSelfPromotion(interaction, deets.platform, deets.creator as MinimalCreatorDetails, user);
