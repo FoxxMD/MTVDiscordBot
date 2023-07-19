@@ -11,25 +11,15 @@
 // but for now it seems best to use the default parser and restrict based on provider keyword with custom domains added?
 
 import videoUrlParser from "js-video-url-parser";
-
-// @ts-ignore
-videoUrlParser.plugins.youtube.parseVideoUrl = function(url) {
-    let match = url.match(
-        /(?:(?:v|vi|be|videos|embed)\/(?!videoseries)|(?:v|ci)=)([\w-]{11})/i
-    );
-    if(match) {
-        return match[1];
-    }
-    // match youtube shorts
-    match = url.match(/youtube.com\/shorts\/([\w-]{11})/i);
-    if(match) {
-        return match[1];
-    }
-    return undefined;
-};
-
-// export const urlParser = (url: string): VideoInfo => {
-//     return videoUrlParser.parse(url);
-// }
+import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
 
 export const urlParser = videoUrlParser;
+
+export const videoDetailsToUrl = (data: VideoInfo<Record<string, any>>): string => {
+    return urlParser.create({
+        videoInfo: data,
+        params: {
+            start: data.params?.start
+        }
+    });
+}
