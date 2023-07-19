@@ -1,5 +1,4 @@
 import {CacheType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder} from "discord.js";
-import {Sequelize} from "sequelize";
 import {getOrInsertUser} from "../../../bot/functions/repository.js";
 import {buildStandingProfile} from "../../../bot/functions/userUtil.js";
 import {Logger} from "@foxxmd/winston";

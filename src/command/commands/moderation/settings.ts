@@ -10,6 +10,7 @@ import {getOrInsertGuild} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 import {Bot} from "../../../bot/Bot.js";
+import {capitalize} from "../../../utils/index.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,6 +28,22 @@ module.exports = {
         .addSubcommand(subCommand =>
             subCommand.setName('safety')
                 .setDescription('Display or set reports channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('The channel to post to')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('errors')
+                .setDescription('Display or set errors channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                        .setDescription('The channel to post to')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('logging')
+                .setDescription('Display or set logging channel')
                 .addChannelOption(option =>
                     option.setName('channel')
                         .setDescription('The channel to post to')
@@ -77,29 +94,36 @@ module.exports = {
 
         const guild = await getOrInsertGuild(interaction.guild, logger);
 
-        switch (interaction.options.getSubcommand()) {
+        const subCommand = interaction.options.getSubcommand();
+        switch (subCommand) {
             case 'firehose':
+            case 'safety':
+            case 'errors':
+            case 'logging':
+                const settingChannel = capitalize(subCommand);
+                let settingName: string;
+                switch(subCommand) {
+                    case 'firehose':
+                        settingName = GuildSettings.SUBMISSION_CHANNEL;
+                        break;
+                    case 'safety':
+                        settingName = GuildSettings.SAFETY_CHANNEL;
+                        break;
+                    case 'errors':
+                        settingName = GuildSettings.ERROR_CHANNEL;
+                        break;
+                    case 'logging':
+                        settingName = GuildSettings.LOGGING_CHANNEL;
+                        break;
+                }
                 const channel = interaction.options.getChannel('channel');
                 if (channel === undefined) {
-                    const subChannel = await guild.getSettingValue<string>(GuildSettings.SUBMISSION_CHANNEL);
-                    await interaction.reply({content: `Submission channel is #${subChannel}`, ephemeral: true});
+                    const subChannel = await guild.getSettingValue<string>(settingName);
+                    await interaction.reply({content: `${settingChannel} channel is #${subChannel}`, ephemeral: true});
                 } else {
-                    await guild.upsertSetting(GuildSettings.SUBMISSION_CHANNEL, channel.id);
+                    await guild.upsertSetting(settingName, channel.id);
                     await interaction.reply({
-                        content: `Set => Submission channel is #${channel.name}`,
-                        ephemeral: true
-                    });
-                }
-                break;
-            case 'safety':
-                const safetyChannel = interaction.options.getChannel('channel');
-                if (safetyChannel === undefined) {
-                    const subChannel = await guild.getSettingValue<string>(GuildSettings.SAFETY_CHANNEL);
-                    await interaction.reply({content: `Safety channel is #${subChannel}`, ephemeral: true});
-                } else {
-                    await guild.upsertSetting(GuildSettings.SAFETY_CHANNEL, safetyChannel.id);
-                    await interaction.reply({
-                        content: `Set => Safety channel is #${safetyChannel.name}`,
+                        content: `Set => ${settingChannel} channel is #${channel.name}`,
                         ephemeral: true
                     });
                 }

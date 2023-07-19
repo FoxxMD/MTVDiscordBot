@@ -1,11 +1,14 @@
-import {CategoryChannel, Guild as DiscordGuild} from "discord.js";
+import {CategoryChannel, Guild as DiscordGuild, TextBasedChannel, TextChannel} from "discord.js";
 import {Guild} from "../../common/db/models/Guild.js";
 import {GuildSettingDefaults, GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {intersect} from "../../utils/index.js";
 import {approvedRoleKeywords} from "../../common/infrastructure/Atomic.js";
-import {Logger} from "@foxxmd/winston";
+import winston, {Logger} from "@foxxmd/winston";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {SimpleError} from "../../utils/Errors.js";
+import {getOrInsertGuild} from "./repository.js";
+import {getLogger} from "../../common/logging.js";
+import {ErrorWithCause} from "pony-cause";
 
 export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuild, logger: Logger) => {
 
@@ -20,6 +23,16 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
     const defaultSafetyChannel = channels.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.SAFETY_CHANNEL));
     if (defaultSafetyChannel !== undefined) {
         await guild.upsertSetting(GuildSettings.SAFETY_CHANNEL, defaultSafetyChannel.id);
+    }
+
+    const defaultErrorChannel = channels.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.ERROR_CHANNEL));
+    if (defaultErrorChannel !== undefined) {
+        await guild.upsertSetting(GuildSettings.ERROR_CHANNEL, defaultSafetyChannel.id);
+    }
+
+    const defaultLoggingChannel = channels.find(x => x.name.toLowerCase().includes(GuildSettingDefaults.LOGGING_CHANNEL));
+    if (defaultLoggingChannel !== undefined) {
+        await guild.upsertSetting(GuildSettings.LOGGING_CHANNEL, defaultLoggingChannel.id);
     }
 
     // init default roles
@@ -98,4 +111,27 @@ export const getContentCreatorDiscordRole = async (guild: Guild, dguild: Discord
         throw new SimpleError(`Content Creator role type references a Discord Role ID ${specialRole.discordRoleId} that does not exist`);
     }
     return ccRole;
+}
+
+export const logToChannel = async (discGuild: DiscordGuild, channelType: string, payload: string | Error) => {
+    const guild = await getOrInsertGuild(discGuild);
+    const channelId = await guild.getSettingValue<string>(channelType);
+    if (channelId === undefined) {
+        return;
+    }
+    let channel: TextBasedChannel;
+    try {
+        channel = await discGuild.channels.fetch(channelId) as TextBasedChannel;
+    } catch (e) {
+        const logger = getLogger({}, 'app');
+        logger.error(new ErrorWithCause(`Could not get channel with Id ${channelId} from Guild ${discGuild.id}`, {cause: e}));
+        return;
+    }
+    let message: string;
+    if (typeof payload === 'string') {
+        message = payload;
+    } else {
+        message = `Error: **${payload.message}**\n\`\`\`${payload.stack.split('\n')[1]}\`\`\``;
+    }
+    await channel.send({content: message})
 }
