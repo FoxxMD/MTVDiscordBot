@@ -3,28 +3,46 @@ import {
     ChatInputCommandInteraction,
     SlashCommandBuilder,
     PermissionFlagsBits,
-    roleMention, GuildMember, GuildMemberRoleManager, Role
+    roleMention,
+    GuildMember,
+    GuildMemberRoleManager,
+    Role,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder, StringSelectMenuInteraction,
+    time
 } from "discord.js";
 import {getOrInsertGuild, getOrInsertUser} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 import {Bot} from "../../../bot/Bot.js";
-import {ApiSupportedPlatforms, MinimalCreatorDetails, SpecialRoleType} from "../../../common/infrastructure/Atomic.js";
-import {capitalize} from "../../../utils/index.js";
+import {
+    ApiSupportedPlatforms,
+    InteractionLike,
+    MinimalCreatorDetails,
+    SpecialRoleType
+} from "../../../common/infrastructure/Atomic.js";
+import {capitalize, interact} from "../../../utils/index.js";
 import {markdownTag} from "../../../utils/StringUtils.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {commaLists, stripIndent} from "common-tags";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
 import {getContentCreatorDiscordRole} from "../../../bot/functions/guildUtil.js";
 import {ErrorWithCause} from "pony-cause";
+import {Creator} from "../../../common/db/models/creator.js";
+import {Op} from "sequelize";
+import {MessageActionRowComponentBuilder} from "@discordjs/builders";
+import {getCreatorFromCommand} from "../../../bot/functions/creatorInteractions.js";
+import {getDurationFromCommand} from "../../../bot/functions/dateInteraction.js";
+import dayjs from "dayjs";
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('creators')
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
-        .setDescription('Manage creator associations')
+        .setDescription('Manage creators')
         .addSubcommand(subCommand =>
-            subCommand.setName('add')
+            subCommand.setName('user-remove')
                 .setDescription('Associate a discord user with a creator channel')
                 .addUserOption(opt =>
                     opt.setName('user')
@@ -36,7 +54,7 @@ module.exports = {
                         .setRequired(true))
         )
         .addSubcommand(subCommand =>
-            subCommand.setName('remove')
+            subCommand.setName('user-add')
                 .setDescription(`Remove a user's association with a creator channel`)
                 .addUserOption(opt =>
                     opt.setName('user')
@@ -47,98 +65,186 @@ module.exports = {
                         .setDescription('A supported video associated with the creator')
                         .setRequired(true))
         )
+        .addSubcommand(subCommand =>
+            subCommand.setName('flag-allow')
+                .setDescription(`Allow a Creator to bypass self-promo`)
+                .addStringOption(opt =>
+                    opt.setName('link')
+                        .setDescription('Find creator by video link'))
+                .addStringOption(opt =>
+                    opt.setName('id')
+                        .setDescription('Find creator by ID'))
+                .addStringOption(opt =>
+                    opt.setName('name')
+                        .setDescription('Find creator by name (with confirmation)'))
+                .addStringOption(opt =>
+                    opt.setName('reason')
+                        .setDescription('Reason for adding to allow list'))
+                .addStringOption(opt =>
+                    opt.setName('expires-at')
+                        .setDescription(`EX: '2 days' or leave empty for never`))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('flag-deny')
+                .setDescription(`Disallow a Creator from being used in Submissions`)
+                .addStringOption(opt =>
+                    opt.setName('link')
+                        .setDescription('Find creator by video link'))
+                .addStringOption(opt =>
+                    opt.setName('id')
+                        .setDescription('Find creator by ID'))
+                .addStringOption(opt =>
+                    opt.setName('name')
+                        .setDescription('Find creator by name (with confirmation)'))
+                .addStringOption(opt =>
+                    opt.setName('reason')
+                        .setDescription('Reason for adding to deny list'))
+                .addStringOption(opt =>
+                    opt.setName('expires-at')
+                        .setDescription(`EX: '2 days' or leave empty for never`))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('flag-expire')
+                .setDescription(`Expire any active allow/deny flag`)
+                .addStringOption(opt =>
+                    opt.setName('link')
+                        .setDescription('Find creator by video link'))
+                .addStringOption(opt =>
+                    opt.setName('id')
+                        .setDescription('Find creator by ID'))
+                .addStringOption(opt =>
+                    opt.setName('name')
+                        .setDescription('Find creator by name (with confirmation)'))
+        )
     ,
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+
+        let interaction: InteractionLike = initialInteraction;
 
         const guild = await getOrInsertGuild(interaction.guild, logger);
 
-        const discordUser = interaction.options.getMember('user') as GuildMember;
-        if(discordUser.user.bot) {
-            return await interaction.reply({
-                content: 'Cannot perform this action on a Bot user',
-                ephemeral: true
-            })
+        const [_, duration] = await getDurationFromCommand(initialInteraction, {currentInteraction: interaction});
+        const [creatorInteraction, creator] = await getCreatorFromCommand(interaction, bot);
+        if(creator === undefined) {
+            return;
         }
-        const user = await getOrInsertUser(discordUser as GuildMember, interaction.guild);
-        const link = interaction.options.getString('link');
+        interaction = creatorInteraction;
 
-        const manager = new PlatformManager(bot.config.credentials, bot.logger);
+        const command = initialInteraction.options.getSubcommand();
 
-        const [deets, urlDetails, video] = await manager.getVideoDetails(link);
+        switch (command) {
+            case 'user-add':
+            case 'user-remove':
 
-        if (!ApiSupportedPlatforms.includes(deets.platform)) {
-            return await interaction.reply({
-                content: commaLists`The platform for this video (${deets.platform}) is not supported by the API. Platform must be one of: ${ApiSupportedPlatforms}`,
-                ephemeral: true
-            });
-        }
-
-        const creator = await manager.upsertCreatorFromDetails(deets.platform, deets.creator as MinimalCreatorDetails);
-
-        const command = interaction.options.getSubcommand();
-
-        const existingCreators = await user.getCreators();
-
-        if (command === 'add') {
-            if (!existingCreators.some(x => x.id === creator.id)) {
-                await user.addCreator(creator);
-                await user.save();
-            }
-            let ccRole: Role;
-            try {
-                ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
-            } catch (e) {
-                logger.warn(new ErrorWithCause('Could not add Content Creator discord role', {cause: e}));
-                return interaction.reply({
-                    content: `User was successfully associated with creator but did not receive Content Creator role due to an error: ${e.message}`,
-                    ephemeral: true
-                });
-            }
-            await (discordUser.roles as GuildMemberRoleManager).add(ccRole);
-            return interaction.reply({
-                content: `User was successfully associated with creator and received the Content Creator role`,
-                ephemeral: true
-            });
-        } else if (command === 'remove') {
-            const replyParts: string[] = [];
-            const updatedExistingCreators = existingCreators.filter(x => x.id !== creator.id)
-            if (updatedExistingCreators.length !== existingCreators.length) {
-                await user.removeCreator(creator);
-                await user.save();
-                replyParts.push('User was successfully disassociated from creator');
-            } else {
-                replyParts.push('User was already not associated with creator');
-            }
-
-
-            if(updatedExistingCreators.length === 0) {
-                // no more creators left for user!
-                let ccRole: Role;
-                try {
-                    ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
-                } catch (e) {
-                    logger.warn(new ErrorWithCause('Could not remove Content Creator discord role', {cause: e}));
-                    replyParts.push(`but could not determine if Content Creator discord role should be removed due to an error when fetching role: ${e.message}`);
+                const discordUser = initialInteraction.options.getMember('user') as GuildMember | undefined | null;
+                if (discordUser !== undefined && discordUser !== null && discordUser.user.bot) {
+                    return await interaction.reply({
+                        content: 'Cannot perform this action on a Bot user',
+                        ephemeral: true
+                    });
                 }
-                if(ccRole !== undefined) {
-                    const roleManager = discordUser.roles as GuildMemberRoleManager;
-                    if(roleManager.cache.has(ccRole.id)) {
-                        await roleManager.remove(ccRole);
-                        replyParts.push(`and removed Content Creator role`);
+                const assocUser = await getOrInsertUser(discordUser as GuildMember, interaction.guild);
+
+                const existingCreators = await assocUser.getCreators();
+
+                if (command === 'user-add') {
+                    if (!existingCreators.some(x => x.id === creator.id)) {
+                        await assocUser.addCreator(creator);
+                        await assocUser.save();
+                    }
+                    let ccRole: Role;
+                    try {
+                        ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
+                    } catch (e) {
+                        logger.warn(new ErrorWithCause('Could not add Content Creator discord role', {cause: e}));
+                        return interaction.reply({
+                            content: `User was successfully associated with creator but did not receive Content Creator role due to an error: ${e.message}`,
+                            ephemeral: true
+                        });
+                    }
+                    await (discordUser.roles as GuildMemberRoleManager).add(ccRole);
+                    return interaction.reply({
+                        content: `User was successfully associated with creator and received the Content Creator role`,
+                        ephemeral: true
+                    });
+                }
+                const replyParts: string[] = [];
+                const updatedExistingCreators = existingCreators.filter(x => x.id !== creator.id)
+                if (updatedExistingCreators.length !== existingCreators.length) {
+                    await assocUser.removeCreator(creator);
+                    await assocUser.save();
+                    replyParts.push('User was successfully disassociated from creator');
+                } else {
+                    replyParts.push('User was already not associated with creator');
+                }
+
+
+                if (updatedExistingCreators.length === 0) {
+                    // no more creators left for user!
+                    let ccRole: Role;
+                    try {
+                        ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
+                    } catch (e) {
+                        logger.warn(new ErrorWithCause('Could not remove Content Creator discord role', {cause: e}));
+                        replyParts.push(`but could not determine if Content Creator discord role should be removed due to an error when fetching role: ${e.message}`);
+                    }
+                    if (ccRole !== undefined) {
+                        const roleManager = discordUser.roles as GuildMemberRoleManager;
+                        if (roleManager.cache.has(ccRole.id)) {
+                            await roleManager.remove(ccRole);
+                            replyParts.push(`and removed Content Creator role`);
+                        }
                     }
                 }
-            }
 
-            await interaction.reply({
-                content: replyParts.join(' '),
-                ephemeral: true
-            });
+                await interaction.reply({
+                    content: replyParts.join(' '),
+                    ephemeral: true
+                });
+                break;
 
-        } else {
-            await interaction.reply({
-                content: `Unrecognized command: ${command}`,
-                ephemeral: true
-            });
+            case 'flag-allow':
+            case 'flag-deny':
+            case 'flag-expire':
+                const user = await getOrInsertUser(interaction.member, interaction.guild);
+                const reason = initialInteraction.options.getString('reason') ?? `Add via ${command} command`;
+                if(interaction.replied) {
+                    return;
+                }
+                if(command === 'flag-expire') {
+                    await creator.expireModifiers(undefined);
+                    await creator.save();
+                    await interact(interaction, {
+                        content: `Expired any existing flags on ${creator.name}`,
+                        ephemeral: true
+                    });
+                } else {
+                    const t = await Creator.sequelize.transaction();
+                    await creator.expireModifiers(undefined, t);
+                    const mod = await creator.createModifier({
+                        flag: command.includes('allow') ? 'allow' : 'deny',
+                        createdById: user.id,
+                        reason,
+                        expiresAt: duration === undefined ? undefined : dayjs().add(duration).toDate()
+                    });
+                    try {
+                        await t.commit();
+                    } catch (e) {
+                        logger.error(e);
+                        await interact(interaction, {content: `Error occurred while committing changes: ${e.message}`, ephemeral: true});
+                        return;
+                    }
+                    await interact(interaction, {
+                        content: `Added ${creator.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`,
+                        ephemeral: true
+                    });
+                }
+                break;
+            default:
+                await interaction.reply({
+                    content: `Unrecognized command: ${command}`,
+                    ephemeral: true
+                });
         }
     }
 }

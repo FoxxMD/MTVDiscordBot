@@ -1,5 +1,5 @@
 import {Duration} from "dayjs/plugin/duration.js";
-import {numberFormatOptions, RegExResult} from "../common/infrastructure/Atomic.js";
+import {DurationString, NamedGroup, numberFormatOptions, RegExResult} from "../common/infrastructure/Atomic.js";
 import {SimpleError} from "./Errors.js";
 import dayjs from "dayjs";
 import {stripIndentTransformer, TemplateTag, TemplateTransformer, trimResultTransformer} from 'common-tags'
@@ -10,6 +10,7 @@ import {
     REGEX_TIME_SECONDS,
     REGEX_YOUTUBE
 } from "../common/infrastructure/Regex.js";
+import InvalidRegexError from "./InvalidRegexError.js";
 
 export const parseRegex = (reg: RegExp, val: string): RegExResult[] | undefined => {
 
@@ -198,4 +199,68 @@ export const truncateStringToLength = (length: any, truncStr = '...') => (val: a
 export const parseUrl = (url: string) => {
     const normalized = normalizeUrl(url, {removeTrailingSlash: true, normalizeProtocol: true, forceHttps: true});
     return new URL(normalized);
+}
+
+export const parseDurationValToDuration = (val: DurationString): Duration => {
+    let duration: Duration;
+    if (typeof val === 'object') {
+        duration = dayjs.duration(val);
+        if (!dayjs.isDuration(duration)) {
+            throw new Error('value given was not a well-formed Duration object');
+        }
+    } else {
+        try {
+            duration = parseDuration(val);
+        } catch (e) {
+            if (e instanceof InvalidRegexError) {
+                throw new Error(`duration value of '${val}' could not be parsed as a valid ISO8601 duration or DayJS duration shorthand`);
+            }
+            throw e;
+        }
+    }
+    return duration;
+}
+
+// string must only contain ISO8601 optionally wrapped by whitespace
+const ISO8601_REGEX: RegExp = /^\s*((-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?)\s*$/;
+// finds ISO8601 in any part of a string
+const ISO8601_SUBSTRING_REGEX: RegExp = /((-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?)/g;
+// string must only duration optionally wrapped by whitespace
+const DURATION_REGEX: RegExp = /^\s*(?<time>\d+)\s*(?<unit>days?|weeks?|months?|years?|hours?|minutes?|seconds?|milliseconds?)\s*$/;
+// finds duration in any part of the string
+const DURATION_SUBSTRING_REGEX: RegExp = /(?<time>\d+)\s*(?<unit>days?|weeks?|months?|years?|hours?|minutes?|seconds?|milliseconds?)/g;
+
+export const parseDurationFromString = (val: string, strict = true): {duration: Duration, original: string}[] => {
+    let matches = parseRegex(strict ? DURATION_REGEX : DURATION_SUBSTRING_REGEX, val);
+    if (matches !== undefined) {
+        return matches.map(x => {
+            const groups = x.named as NamedGroup;
+            const dur: Duration = dayjs.duration(groups.time, groups.unit);
+            if (!dayjs.isDuration(dur)) {
+                throw new SimpleError(`Parsed value '${x.match}' did not result in a valid Dayjs Duration`);
+            }
+            return {duration: dur, original: `${groups.time} ${groups.unit}`};
+        });
+    }
+
+    matches = parseRegex(strict ? ISO8601_REGEX : ISO8601_SUBSTRING_REGEX, val);
+    if (matches !== undefined) {
+        return matches.map(x => {
+            const dur: Duration = dayjs.duration(x.groups[0]);
+            if (!dayjs.isDuration(dur)) {
+                throw new SimpleError(`Parsed value '${x.groups[0]}' did not result in a valid Dayjs Duration`);
+            }
+            return {duration: dur, original: x.groups[0]};
+        });
+    }
+
+    throw new InvalidRegexError([(strict ? DURATION_REGEX : DURATION_SUBSTRING_REGEX), (strict ? ISO8601_REGEX : ISO8601_SUBSTRING_REGEX)], val)
+}
+
+export const parseDuration = (val: string, strict = true): Duration => {
+    const res = parseDurationFromString(val, strict);
+    if(res.length > 1) {
+        throw new SimpleError(`Must only have one Duration value, found ${res.length} in: ${val}`);
+    }
+    return res[0].duration;
 }

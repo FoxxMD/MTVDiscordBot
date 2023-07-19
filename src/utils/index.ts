@@ -1,3 +1,12 @@
+import {InteractionLike} from "../common/infrastructure/Atomic.js";
+import {
+    InteractionReplyOptions,
+    InteractionResponse,
+    InteractionUpdateOptions,
+    Message,
+    MessagePayload
+} from "discord.js";
+
 export const overwriteMerge = (destinationArray: any[], sourceArray: any[], options: any): any[] => sourceArray;
 
 export const capitalize = (str: string): string => {
@@ -27,4 +36,20 @@ export const intersect = (a: Array<any>, b: Array<any>) => {
 
 export function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export interface ReplyOptions {
+    defer?: boolean
+}
+
+export const interact = async (interaction: InteractionLike, messageOptions: MessagePayload | InteractionReplyOptions | InteractionUpdateOptions, replyOptions?: ReplyOptions): Promise<Message<boolean> | InteractionResponse<boolean>> => {
+    const {defer} = replyOptions || {};
+    if(interaction.isMessageComponent()) {
+        const {components = [], content} = messageOptions as InteractionUpdateOptions;
+        return await interaction.update({content, components});
+    } else if(interaction.replied) {
+        return await interaction.followUp(messageOptions as MessagePayload | InteractionReplyOptions);
+    } else {
+        return await interaction.reply(messageOptions as MessagePayload | InteractionReplyOptions);
+    }
 }

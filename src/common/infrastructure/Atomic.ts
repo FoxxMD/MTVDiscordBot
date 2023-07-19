@@ -1,5 +1,11 @@
 import {MESSAGE} from 'triple-beam';
-import {CacheType, ChatInputCommandInteraction, MessageComponentInteraction, ModalSubmitInteraction} from "discord.js";
+import {
+    CacheType,
+    ChatInputCommandInteraction,
+    InteractionResponse, Message,
+    MessageComponentInteraction,
+    ModalSubmitInteraction
+} from "discord.js";
 
 export type LogLevel = "error" | "warn" | "info" | "verbose" | "debug";
 export const logLevels = ['error', 'warn', 'info', 'verbose', 'debug'];
@@ -131,3 +137,18 @@ export const VideoReactions = {
     DOWN: '👎',
     REPORT: '❌'
 };
+
+/**
+ * A shorthand value for a DayJS duration consisting of a number value and time unit
+ *
+ * * EX `9 days`
+ * * EX `3 months`
+ * @pattern ^\s*(?<time>\d+)\s*(?<unit>days?|weeks?|months?|years?|hours?|minutes?|seconds?|milliseconds?)\s*$
+ * */
+export type DayJSShorthand = string;
+/**
+ * An ISO 8601 Duration
+ * @pattern ^(-?)P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)([DW]))?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$
+ * */
+export type ISO8601 = string;
+export type DurationString = DayJSShorthand | ISO8601;

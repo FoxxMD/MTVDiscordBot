@@ -99,7 +99,7 @@ export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger
 
         let extPart = '';
         if(videoSubmission !== undefined && submitter !== undefined) {
-            detailParts.push(`Submitted By: ${userMention(submitter.discordId)} ${videoSubmission.getDiscordMessageLink()}`)
+            detailParts.push(`Submitted By: ${userMention(submitter.discordId)} ${await videoSubmission.getDiscordMessageLink()}`)
         } else {
             if(externalSubmitter !== undefined) {
                 extPart = `Submitted By: u/${externalSubmitter}`;
@@ -110,7 +110,7 @@ export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger
             detailParts.push(extPart);
         }
 
-        detailParts.push(`Link: ${videoSubmission !== undefined && videoSubmission.url !== undefined ? videoSubmission.url : video.url}`);
+        detailParts.push(`Link: ${videoSubmission !== undefined && videoSubmission.url !== null ? videoSubmission.url : video.url}`);
 
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
 
