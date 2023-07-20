@@ -144,21 +144,26 @@ export const checkAge = async (interaction: InteractionLike, user: User) => {
 export const checkRules = async (interaction: InteractionLike, user: User) => {
     let hasReadRules = true;
     if(interaction.member.pending) {
-        hasReadRules = false;
-    } else {
-        const ruleRoles = await ((await user.getGuild()).getRoleIdsByType(ROLE_TYPES.TOS));
-        const ruleRoleExists = ruleRoles.length > 0;
-        if(ruleRoleExists) {
-            hasReadRules = await memberHasRoleType(ROLE_TYPES.TOS, interaction);
-        }
-    }
-    if(!hasReadRules) {
-        await interaction.reply({
+        return await interaction.reply({
             content: oneLine`
             You must **agree to the server rules** before you can submit a video.
             `,
             ephemeral: true
         });
+    } else {
+        const ruleRoles = await ((await user.getGuild()).getRoleIdsByType(ROLE_TYPES.TOS));
+        const ruleRoleExists = ruleRoles.length > 0;
+        if(ruleRoleExists) {
+            const hasReadTOS = await memberHasRoleType(ROLE_TYPES.TOS, interaction);
+            if(!hasReadTOS) {
+                await interaction.reply({
+                    content: oneLine`
+            You must **read the getting started/video submission instructions** before you can submit a video.
+            `,
+                    ephemeral: true
+                });
+            }
+        }
     }
 }
 

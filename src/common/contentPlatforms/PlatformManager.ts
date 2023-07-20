@@ -1,6 +1,7 @@
 import {Credentials} from "../infrastructure/OperatorConfig.js";
 import {YoutubeClient} from "./clients/YoutubeClient.js";
 import {
+    AllowedVideoProviders,
     ApiSupportedPlatforms,
     FullCreatorDetails,
     MinimalCreatorDetails, Platform,
@@ -15,6 +16,7 @@ import {getCreatorByDetails, getVideoByVideoId, upsertVideoCreator} from "../../
 import {parseUrl} from "../../utils/StringUtils.js";
 import {Video} from "../db/models/video.js";
 import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
+import {Creator} from "../db/models/creator.js";
 
 export class PlatformManager {
 
@@ -36,7 +38,7 @@ export class PlatformManager {
         }
     }
 
-    async getVideoDetails(urlVal: string): Promise<[ Partial<VideoDetails>, VideoInfo<Record<string, any>, string>?, Video?]> {
+    async getVideoDetails(urlVal: string, includeCreator?: boolean): Promise<[ Partial<VideoDetails>, VideoInfo<Record<string, any>, string>?, Video?, Creator?]> {
         const url = parseUrl(urlVal);
         let details: Partial<VideoDetails> = {
             id: url.toString(),
@@ -75,7 +77,12 @@ export class PlatformManager {
             }
         }
 
-        return [details, urlDetails, undefined];
+        let creator: Creator | undefined;
+        if(includeCreator && details.creator?.id !== undefined && AllowedVideoProviders.includes(details.platform)) {
+            creator = await this.upsertCreatorFromDetails(details.platform, details.creator as MinimalCreatorDetails);
+        }
+
+        return [details, urlDetails, undefined, creator];
     }
 
     async getChannelDetails(platform: string, channelId: string): Promise<FullCreatorDetails | undefined> {

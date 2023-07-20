@@ -6,7 +6,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
     ActionRowBuilder,
-    time
+    time, userMention
 } from "discord.js";
 import {oneLine} from 'common-tags';
 import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/repository.js";
@@ -44,16 +44,49 @@ module.exports = {
         const user = await getOrInsertUser(interaction.member, interaction.guild);
         const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
 
+        const url = interaction.options.getString('url');
+        const manager = new PlatformManager(bot.config.credentials, bot.logger);
+
+        let blacklisted = false,
+            ruleFail = false,
+            ageFail = false;
+
         await checkBlacklisted(interaction, user);
         if(interaction.replied) {
-            return;
+            blacklisted = true;
         }
-        await checkRules(interaction, user);
-        if (interaction.replied) {
-            return;
+        if(!blacklisted) {
+            await checkRules(interaction, user);
         }
-        await checkAge(interaction, user);
         if (interaction.replied) {
+            ruleFail = true;
+        }
+        if(!ruleFail) {
+            await checkAge(interaction, user);
+        }
+        if (interaction.replied) {
+            ageFail = true;
+        }
+
+        if(!hasAllowedRole && (blacklisted || ruleFail || ageFail)) {
+            let userReason = 'is blacklisted';
+            if(ruleFail) {
+                userReason = 'failed to agree to TOS';
+            } else if(ageFail) {
+                userReason = 'joined server less than 24 hours ago';
+            }
+            const [deets, urlDetails, existingVideo, creator] = await manager.getVideoDetails(url, true);
+            if(creator !== undefined && creator.popular !== undefined) {
+                if(creator.popular === 0) {
+                    // submission is from unestablished creator AND user did not read rules, is too young, or is already blacklisted
+                    // likely they are spamming and the creator is a spammy channel! straight to jail
+                    const expiresAt = dayjs().add(1, 'week').toDate();
+                    await creator.createModifier({flag: 'deny', reason: `${user.name} ${userReason} (spammy) and tried to submit video from this unknown creator.`, expiresAt});
+                    logger['safety'](`Blacklisted Creator ${creator.humanId} for ${time(expiresAt, 'R')} due to spammy behavior from user: ${userMention(interaction.member.user.id)} ${userReason} and tried to submit video from this unknown creator.`, {sendToGuild: true});
+                } else if(creator.popular < 3) {
+                    logger['safety'](`${userMention(interaction.member.user.id)} ${userReason} and tried to submit video from this relatively unknown creator: ${creator.humanId}.`, {sendToGuild: true});
+                }
+            }
             return;
         }
 
@@ -66,10 +99,6 @@ module.exports = {
                 return;
             }
         }
-
-        const url = interaction.options.getString('url');
-
-        const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
         const [deets, urlDetails, existingVideo] = await manager.getVideoDetails(url);
         let sanitizedUrl = urlDetails !== undefined ? videoDetailsToUrl(urlDetails) : url;

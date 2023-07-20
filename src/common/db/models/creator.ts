@@ -109,6 +109,10 @@ export class Creator extends Model<InferAttributes<Creator, {
         return this.popular >= 5;
     }
 
+    get humanId(): NonAttribute<string> {
+        return `(${this.platform}) ${this.name}`;
+    }
+
     static parsePopularity(platform: Platform, details: FullCreatorDetails): number | undefined {
         if(details.followers === undefined || details.followers === null) {
             return undefined;
