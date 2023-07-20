@@ -14,7 +14,7 @@ import {Symbol} from "typescript-json-schema";
 import {fileOrDirectoryIsWriteable} from "../utils/io.js";
 import {capitalize} from "../utils/index.js";
 
-const {combine, printf, timestamp, label, splat, errors} = format;
+const {combine, printf, timestamp, label, splat, errors, metadata} = format;
 
 const {transports} = winston;
 
@@ -87,6 +87,7 @@ export const getLogger = (config: LogConfig = {}, name = 'App'): Logger => {
             level: level,
             format: labelledFormat(name),
             transports: myTransports,
+            levels: logLevels
         };
 
         winston.loggers.add(name, loggerOptions);
@@ -135,6 +136,10 @@ export const defaultFormat = (defaultLabel = 'App') => printf(({
                                                                    durationMs,
                                                                    [SPLAT]: splatObj,
                                                                    stack,
+                                                                   sendToGuild,
+                                                                   discordGuild,
+                                                                   guild,
+                                                                   byDiscordUser,
                                                                    ...rest
                                                                }) => {
     const keys = Object.keys(rest);
@@ -183,6 +188,7 @@ export const labelledFormat = (labelName = 'App') => {
 export const logLevels = {
     error: 0,
     warn: 1,
+    safety: 2,
     info: 2,
     http: 3,
     verbose: 4,

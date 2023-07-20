@@ -148,6 +148,7 @@ module.exports = {
                     await interaction.reply({content: `Rate Limiting: ${limitSetting ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
                 } else {
                     await guild.upsertSetting(GuildSettings.RATE_LIMIT_MODE, limit, true);
+                    logger.info(`Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`,{sendToGuild: true, byDiscordUser: interaction.member.user.id});
                     await interaction.reply({content: `Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
                 }
                 break;

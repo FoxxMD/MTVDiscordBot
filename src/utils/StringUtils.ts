@@ -264,3 +264,8 @@ export const parseDuration = (val: string, strict = true): Duration => {
     }
     return res[0].duration;
 }
+
+const ERROR_STACK_REGEX = /\w*Error.*\n\s*at(?:.|\n)*/i;
+export const detectErrorStack = (str: string) => {
+    return parseRegexSingleOrFail(ERROR_STACK_REGEX, str);
+}

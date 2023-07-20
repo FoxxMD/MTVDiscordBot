@@ -1,13 +1,14 @@
 import {MESSAGE} from 'triple-beam';
 import {
     CacheType,
-    ChatInputCommandInteraction,
+    ChatInputCommandInteraction, Guild as DiscordGuild,
     InteractionResponse, Message,
     MessageComponentInteraction,
     ModalSubmitInteraction
 } from "discord.js";
+import {Guild} from "../db/models/Guild.js";
 
-export type LogLevel = "error" | "warn" | "info" | "verbose" | "debug";
+export type LogLevel = "error" | "warn" | "safety" | "info" | "verbose" | "debug";
 export const logLevels = ['error', 'warn', 'info', 'verbose', 'debug'];
 
 export type ConfigFormat = 'yaml';
@@ -58,6 +59,10 @@ export interface LogInfo {
     timestamp: string
     labels?: string[]
     transport?: string[]
+    discordGuild?: string | DiscordGuild
+    guild?: string | Guild
+    sendToGuild?: boolean
+    byDiscordUser?: string
 }
 
 export const staffRoleKeywords = ['moderation', 'admin'];

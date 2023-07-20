@@ -112,26 +112,3 @@ export const getContentCreatorDiscordRole = async (guild: Guild, dguild: Discord
     }
     return ccRole;
 }
-
-export const logToChannel = async (discGuild: DiscordGuild, channelType: string, payload: string | Error) => {
-    const guild = await getOrInsertGuild(discGuild);
-    const channelId = await guild.getSettingValue<string>(channelType);
-    if (channelId === undefined) {
-        return;
-    }
-    let channel: TextBasedChannel;
-    try {
-        channel = await discGuild.channels.fetch(channelId) as TextBasedChannel;
-    } catch (e) {
-        const logger = getLogger({}, 'app');
-        logger.error(new ErrorWithCause(`Could not get channel with Id ${channelId} from Guild ${discGuild.id}`, {cause: e}));
-        return;
-    }
-    let message: string;
-    if (typeof payload === 'string') {
-        message = payload;
-    } else {
-        message = `Error: **${payload.message}**\n\`\`\`${payload.stack.split('\n')[1]}\`\`\``;
-    }
-    await channel.send({content: message})
-}

@@ -6,7 +6,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
     ActionRowBuilder,
-    time, PermissionFlagsBits, GuildMember
+    time, PermissionFlagsBits, GuildMember, userMention
 } from "discord.js";
 import {oneLine} from 'common-tags';
 import {getOrInsertUser, getVideoByVideoId} from "../../../bot/functions/repository.js";
@@ -129,6 +129,7 @@ module.exports = {
                 if (interaction.replied) {
                     return;
                 }
+                logger.info(`Submitted ${url} for User ${userMention(user.discordId)}`, {sendToGuild: true, byDiscordUser: interaction.member.user.id})
                 await addFirehoseVideo(modalRes, sanitizedUrl, deets as MinimalVideoDetails, user);
             } catch (e) {
                 throw e;
