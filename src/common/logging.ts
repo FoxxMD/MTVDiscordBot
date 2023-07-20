@@ -66,8 +66,8 @@ export const getLogger = (config: LogConfig = {}, name = 'App'): Logger => {
             const rotateTransport = new DailyRotateFile({
                 dirname: logPath,
                 createSymlink: true,
-                symlinkName: 'scrobble-current.log',
-                filename: 'scrobble-%DATE%.log',
+                symlinkName: 'mtv-current.log',
+                filename: 'mtv-%DATE%.log',
                 datePattern: 'YYYY-MM-DD',
                 maxSize: '5m',
                 level: file
