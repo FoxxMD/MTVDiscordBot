@@ -21,7 +21,7 @@ import {
 import {GuildSettings} from "../../common/db/models/GuildSettings.js";
 import {durationToHuman, formatNumber} from "../../utils/StringUtils.js";
 import {VideoSubmission} from "../../common/db/models/videosubmission.js";
-import {memberHasRoleType} from "./userUtil.js";
+import {checkAge, checkBlacklisted, memberHasRoleType} from "./userUtil.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {MessageActionRowComponentBuilder} from "@discordjs/builders";
 import {Creator} from "../../common/db/models/creator.js";
@@ -103,34 +103,23 @@ export const checkSelfPromotion = async (interaction: InteractionLike, platform:
     }
 }
 
-export const checkBlacklisted = async (interaction: InteractionLike, user: User) => {
-    const activeModifier = await user.getActiveModifier();
-    if(activeModifier === undefined || activeModifier.flag === 'allow') {
-        return;
-    }
-    await interaction.reply({
-        content: oneLine`
+export const replyBlacklisted = async (interaction: InteractionLike, user: User) => {
+    const isBlacklisted = await checkBlacklisted(interaction, user);
+    if(isBlacklisted) {
+        const activeModifier = await user.getActiveModifier();
+        await interaction.reply({
+            content: oneLine`
             You are in jail and not allowed to make new submissions due to previous infractions.
             Your sentence ends ${activeModifier.expiresAt !== undefined ? time(activeModifier.expiresAt, 'R') : 'never'}. 
             `,
-        ephemeral: true
-    });
+            ephemeral: true
+        });
+    }
 }
 
-export const checkAge = async (interaction: InteractionLike, user: User) => {
-    const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);
-    if(hasAllowedRole) {
-        return;
-    }
-    let joined: Dayjs;
-    if('joinedAt' in interaction.member) {
-        joined = dayjs(interaction.member.joinedAt);
-    } else {
-        joined = dayjs(user.createdAt);
-    }
-    const waitingPeriodOver = joined.add(24, 'hours');
-
-    if(waitingPeriodOver.isAfter(dayjs())) {
+export const replyAge = async (interaction: InteractionLike, user: User) => {
+    const waitingPeriodOver = await checkAge(interaction, user);
+    if(waitingPeriodOver !== undefined) {
         await interaction.reply({
             content: oneLine`
             In order to prevent spam new users must wait 24 hours after joining the server before they can submit videos.

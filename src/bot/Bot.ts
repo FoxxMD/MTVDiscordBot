@@ -3,9 +3,9 @@ import {Sequelize} from "sequelize";
 import {Logger} from "@foxxmd/winston";
 import {mergeArr} from "../utils/index.js";
 import {OperatorConfig} from "../common/infrastructure/OperatorConfig.js";
-import {initCommands, registerGuildCommands} from "../command/handler.js";
-import {Events, TextChannel} from "discord.js";
-import {logLevels} from "../common/logging.js";
+import {initCommands, initEvents, registerGuildCommands} from "../command/handler.js";
+import {Events, Guild as DiscordGuild, TextBasedChannel, TextChannel, userMention} from "discord.js";
+import {isLogLineMinLevel, logLevels} from "../common/logging.js";
 import {getOrInsertGuild, getOrInsertVideo, getVideoByVideoId} from "./functions/repository.js";
 import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
 import {createProcessFirehoseTask} from "./tasks/processFirehose.js";
@@ -13,6 +13,12 @@ import {createHeartbeatTask} from "./tasks/heartbeat.js";
 import {RedditClient} from "../RedditClient.js";
 import {ErrorWithCause} from "pony-cause";
 import {createRedditHotTask} from "./tasks/processRedditHot.js";
+import {LogInfo} from "../common/infrastructure/Atomic.js";
+import {Guild} from "../common/db/models/Guild.js";
+import {MESSAGE, SPLAT} from "triple-beam";
+import {GuildSettings} from "../common/db/models/GuildSettings.js";
+import {detectErrorStack} from "../utils/StringUtils.js";
+import ReadableStream = NodeJS.ReadableStream;
 
 export class Bot {
     public client: BotClient;
@@ -61,6 +67,9 @@ export class Bot {
                 sr,
             ]);
             logger.info('Bot is now ready to init');
+            this.setupChannelLogging(this.logger.stream());
+
+            await initEvents(this.client, this);
 
             for (const [id, guild] of this.client.guilds.cache) {
                 await getOrInsertGuild(guild, this.logger);
@@ -104,5 +113,78 @@ export class Bot {
             scheduler.stop();
             throw e;
         }
+    }
+
+    setupChannelLogging(stream: ReadableStream) {
+        const logger = this.logger.child({labels: ['Channels']}, mergeArr);
+        stream.on('log', async (log: LogInfo) => {
+            if (log.sendToGuild !== undefined) {
+                const {
+                    discordGuild,
+                    guild: mtvGuild,
+                    byDiscordUser
+                } = log;
+                let guild: Guild;
+                if (mtvGuild !== undefined) {
+                    if (mtvGuild instanceof Guild) {
+                        guild = mtvGuild;
+                    } else {
+                        guild = await Guild.findByPk(mtvGuild);
+                    }
+                }
+                if (guild === undefined && discordGuild !== undefined) {
+                    if (discordGuild instanceof DiscordGuild) {
+                        guild = await getOrInsertGuild(discordGuild);
+                    } else {
+                        try {
+                            const dguild = await this.client.guilds.fetch(discordGuild);
+                            guild = await getOrInsertGuild(dguild);
+                        } catch (e) {
+                            logger.warn(`Could not log to Discord because given Guild ID does not exist: ${discordGuild}`);
+                            return;
+                        }
+                    }
+                }
+                if (guild === undefined) {
+                    logger.warn('Could not resolve Guild for logging!', {[SPLAT]: {discordGuild, guild}});
+                    return;
+                }
+                let channelId: string;
+                let channelName: string;
+                if (isLogLineMinLevel(log, 'warn')) {
+                    channelName = GuildSettings.ERROR_CHANNEL;
+                } else if (log.level === 'safety') {
+                    channelName = GuildSettings.SAFETY_CHANNEL;
+                } else {
+                    channelName = GuildSettings.LOGGING_CHANNEL;
+                }
+                channelId = await guild.getSettingValue<string>(channelName);
+                if (channelId === undefined) {
+                    this.logger.warn(`No value set for logging Channel '${channelName}'!`, {[SPLAT]: {guild: guild.id}});
+                    return;
+                }
+                let channel: TextBasedChannel;
+                try {
+                    channel = await this.client.channels.fetch(channelId) as TextBasedChannel;
+                } catch (e) {
+                    logger.warn(new ErrorWithCause(`Unable to fetch Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
+                    return;
+                }
+                try {
+                    let cleanedMessage = log[MESSAGE]
+                        .slice(26) // remove timestamp since discord has their own on message
+                        .replace(/^(\w+)\s*:/, '$1:') // remove whitespace from level padding
+                        .replace(`[Guild ${guild.id}]`, `${byDiscordUser !== undefined ? `[${userMention(byDiscordUser)}]` : ''}`) // remove guild label since we will be reading it in the guild anyway and replace with user who executed, if provided
+                        .slice(0, 1999); // make sure not to hit message character limit
+                    const stackRes = detectErrorStack(cleanedMessage);
+                    if (stackRes !== undefined) {
+                        cleanedMessage = `${cleanedMessage.slice(0, stackRes.index)}\n\`\`\`${cleanedMessage.slice(stackRes.index)}\`\`\``
+                    }
+                    await channel.send({content: cleanedMessage});
+                } catch (e) {
+                    logger.warn(new ErrorWithCause(`Error occurred while sending log to Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
+                }
+            }
+        });
     }
 }

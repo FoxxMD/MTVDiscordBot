@@ -51,7 +51,8 @@ export class PlatformManager {
             const existingVideo = await getVideoByVideoId(urlDetails.id, urlDetails.provider);
             if(existingVideo !== undefined) {
                 details = await existingVideo.toVideoDetails();
-                return [details, urlDetails, existingVideo];
+                const creator = await existingVideo.getCreator();
+                return [details, urlDetails, existingVideo, creator];
             }
             details.id = urlDetails.id;
             details.platform = urlDetails.provider as Platform;

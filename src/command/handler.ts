@@ -30,9 +30,6 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
         return gl;
     }
 
-    const stream = logger.stream();
-    setupChannelLogging(client, stream ,logger);
-
     const slashCommandData = [];
 
     client.commands = new Collection();
@@ -128,74 +125,33 @@ export const registerGuildCommands = async (credentials: DiscordCredentials, gui
     }
 }
 
-export const setupChannelLogging = (client: BotClient, stream: ReadableStream, logger: Logger) => {
-    stream.on('log', async (log: LogInfo) => {
-        if (log.sendToGuild !== undefined) {
-            const {
-                discordGuild,
-                guild: mtvGuild,
-                byDiscordUser
-            } = log;
-            let guild: Guild;
-            if (mtvGuild !== undefined) {
-                if (mtvGuild instanceof Guild) {
-                    guild = mtvGuild;
-                } else {
-                    guild = await Guild.findByPk(mtvGuild);
+export const initEvents = async (client: BotClient, bot: Bot) => {
+    const foldersPath = path.join(__dirname, '../bot/', 'events');
+    const eventsFolder = fs.readdirSync(foldersPath);
+
+    const eventsLogger = bot.logger.child({labels: ['Events']}, mergeArr);
+
+    try {
+        for (const folder of eventsFolder) {
+            const commandsPath = path.join(foldersPath, folder);
+            const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+            for (const file of commandFiles) {
+                const filePath = path.join(commandsPath, file);
+                const event = require(filePath);
+                if ('eventType' in event && 'on' in event) {
+                    const eventLogger = bot.logger.child({labels: [`Event ${file}`]}, mergeArr);
+                    bot.client.on(event.eventType, async (...args) => {
+                        try {
+                            await event.on(bot, eventLogger, ...args);
+                        } catch (e) {
+                            // @ts-expect-error
+                            eventsLogger.error(new ErrorWithCause(`Error occurred while handling event ${event.eventType} in handler ${file}`, {cause: e}), {sendToGuild: true});
+                        }
+                    });
                 }
-            }
-            if (guild === undefined && discordGuild !== undefined) {
-                if (discordGuild instanceof DiscordGuild) {
-                    guild = await getOrInsertGuild(discordGuild);
-                } else {
-                    try {
-                        const dguild = await client.guilds.fetch(discordGuild);
-                        guild = await getOrInsertGuild(dguild);
-                    } catch (e) {
-                        logger.warn(`Could not log to Discord because given Guild ID does not exist: ${discordGuild}`);
-                        return;
-                    }
-                }
-            }
-            if (guild === undefined) {
-                logger.warn('Could not resolve Guild for logging!', {[SPLAT]: {discordGuild, guild}});
-                return;
-            }
-            let channelId: string;
-            let channelName: string;
-            if (isLogLineMinLevel(log, 'warn')) {
-                channelName = GuildSettings.ERROR_CHANNEL;
-            } else if (log.level === 'safety') {
-                channelName = GuildSettings.SAFETY_CHANNEL;
-            } else {
-                channelName = GuildSettings.LOGGING_CHANNEL;
-            }
-            channelId = await guild.getSettingValue<string>(channelName);
-            if (channelId === undefined) {
-                logger.warn(`No value set for logging Channel '${channelName}'!`, {[SPLAT]: {guild: guild.id}});
-                return;
-            }
-            let channel: TextBasedChannel;
-            try {
-                channel = await client.channels.fetch(channelId) as TextBasedChannel;
-            } catch (e) {
-                logger.warn(new ErrorWithCause(`Unable to fetch Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
-                return;
-            }
-            try {
-                let cleanedMessage = log[MESSAGE]
-                    .slice(26) // remove timestamp since discord has their own on message
-                    .replace(/^(\w+)\s*:/, '$1:') // remove whitespace from level padding
-                    .replace(`[Guild ${guild.id}]`, `${byDiscordUser !== undefined ? `[${userMention(byDiscordUser)}]` : ''}`) // remove guild label since we will be reading it in the guild anyway and replace with user who executed, if provided
-                    .slice(0, 1999); // make sure not to hit message character limit
-                const stackRes = detectErrorStack(cleanedMessage);
-                if (stackRes !== undefined) {
-                    cleanedMessage = `${cleanedMessage.slice(0, stackRes.index)}\n\`\`\`${cleanedMessage.slice(stackRes.index)}\`\`\``
-                }
-                await channel.send({content: cleanedMessage});
-            } catch (e) {
-                logger.warn(new ErrorWithCause(`Error occurred while sending log to Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
             }
         }
-    });
+    } catch (e) {
+        throw e;
+    }
 }

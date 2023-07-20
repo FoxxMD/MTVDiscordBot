@@ -116,6 +116,8 @@ export interface RegExResult {
 
 export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType> | MessageComponentInteraction<CacheType>;
 
+export type MessageLike = Message<true> | InteractionLike;
+
 export type SpecialRoleType = 'approved' | 'janitor' | 'tos' | 'contentCreator';
 
 export type AllowDenyType = 'allow' | 'deny';

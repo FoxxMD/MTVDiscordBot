@@ -11,6 +11,7 @@ import {
     REGEX_YOUTUBE
 } from "../common/infrastructure/Regex.js";
 import InvalidRegexError from "./InvalidRegexError.js";
+import * as linkify from 'linkifyjs';
 
 export const parseRegex = (reg: RegExp, val: string): RegExResult[] | undefined => {
 
@@ -268,4 +269,8 @@ export const parseDuration = (val: string, strict = true): Duration => {
 const ERROR_STACK_REGEX = /\w*Error.*\n\s*at(?:.|\n)*/i;
 export const detectErrorStack = (str: string) => {
     return parseRegexSingleOrFail(ERROR_STACK_REGEX, str);
+}
+
+export const getUrlsFromString = (str: string) => {
+    return linkify.find(str).filter(x => x.isLink && x.type === 'url').map(x => x.href);
 }

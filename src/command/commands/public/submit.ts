@@ -22,7 +22,7 @@ import {
     MinimalVideoDetails
 } from "../../../common/infrastructure/Atomic.js";
 import {
-    checkAge, checkBlacklisted, checkCreatorBlacklisted,
+    replyAge, replyBlacklisted, checkCreatorBlacklisted,
     checkLengthConstraints, checkRules,
     checkSelfPromotion, confirmTimestamp,
     rateLimitUser
@@ -51,7 +51,7 @@ module.exports = {
             ruleFail = false,
             ageFail = false;
 
-        await checkBlacklisted(interaction, user);
+        await replyBlacklisted(interaction, user);
         if(interaction.replied) {
             blacklisted = true;
         }
@@ -62,7 +62,7 @@ module.exports = {
             ruleFail = true;
         }
         if(!ruleFail) {
-            await checkAge(interaction, user);
+            await replyAge(interaction, user);
         }
         if (interaction.replied) {
             ageFail = true;
