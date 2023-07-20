@@ -18,7 +18,7 @@ import {
 } from "sequelize";
 import {Video} from "./video.js";
 import {User} from "./user.js";
-import {FullCreatorDetails} from "../../infrastructure/Atomic.js";
+import {FullCreatorDetails, Platform, PopularityThresholdLevel} from "../../infrastructure/Atomic.js";
 import {AllowDenyModifier, AllowDenyModifierData} from "./AllowDenyModifier.js";
 import dayjs, {Dayjs} from "dayjs";
 
@@ -31,7 +31,7 @@ export class Creator extends Model<InferAttributes<Creator, {
     declare platformId: string;
     declare name: CreationOptional<string>;
     declare nsfw: boolean;
-    declare popular: CreationOptional<boolean>;
+    declare popular: CreationOptional<number>;
     declare platformCreatedAt: CreationOptional<Date>;
 
     declare createdAt: CreationOptional<Date>;
@@ -56,12 +56,11 @@ export class Creator extends Model<InferAttributes<Creator, {
     populateFromDetails = (details: FullCreatorDetails) => {
         this.name = details.name;
         this.platformCreatedAt = details.createdAt;
-        switch (this.platform) {
-            case 'youtube':
-                this.popular = details.followers > 100000;
-                break;
-            case 'vimeo':
-                this.popular = details.followers > 1000;
+        const popLevel = Creator.parsePopularity(this.platform, details);
+        if(popLevel === undefined) {
+            this.popular = null;
+        } else {
+            this.popular = popLevel;
         }
     }
 
@@ -105,6 +104,23 @@ export class Creator extends Model<InferAttributes<Creator, {
             throw e;
         }
     }
+
+    isPopular() {
+        return this.popular >= 5;
+    }
+
+    static parsePopularity(platform: Platform, details: FullCreatorDetails): number | undefined {
+        if(details.followers === undefined || details.followers === null) {
+            return undefined;
+        }
+        if(PopularityThresholds[platform] !== undefined) {
+            for(const thresh of PopularityThresholds[platform]) {
+                if(details.followers < thresh.count) {
+                    return thresh.level;
+                }
+            }
+        }
+    }
 }
 
 export const init = (sequelize: Sequelize) => {
@@ -119,7 +135,7 @@ export const init = (sequelize: Sequelize) => {
         platformId: DataTypes.STRING,
         nsfw: DataTypes.BOOLEAN,
         popular: {
-            type: DataTypes.BOOLEAN,
+            type: DataTypes.INTEGER,
         },
         platformCreatedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
@@ -167,4 +183,78 @@ export const associate = () => {
             }
         }
     })
+}
+
+export const PopularityThresholds: Record<Platform, PopularityThresholdLevel[]> = {
+    // based on https://timqueen.com/youtube-number-of-channels/
+    youtube: [
+        {
+            count: 100, level: 0
+        },
+        {
+            count: 1000, level: 1
+        },
+        {
+            count: 5000, level: 2
+        },
+        {
+            count: 10000, level: 3
+        },
+        {
+            count: 50000, level: 4
+        },
+        {
+            count: 100000, level: 5
+        },
+        {
+            count: 500000, level: 6
+        },
+        {
+            count: 1000000, level: 7
+        },
+        {
+            count: 10000000, level: 8
+        },
+        {
+            count: 50000000, level: 9
+        },
+        {
+            count: 100000000, level: 10
+        }
+    ],
+    vimeo: [
+        {
+            count: 10, level: 0
+        },
+        {
+            count: 50, level: 1
+        },
+        {
+            count: 100, level: 2
+        },
+        {
+            count: 200, level: 3
+        },
+        {
+            count: 300, level: 4
+        },
+        {
+            count: 500, level: 5
+        },
+        {
+            count: 750, level: 6
+        },
+        {
+            count: 1500, level: 7
+        },
+        {
+            count: 3000, level: 8
+        },
+        {
+            count: 5000, level: 9
+        },
+        {
+            count: 10000, level: 10
+        }
+    ]
 }

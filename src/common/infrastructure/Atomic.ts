@@ -157,3 +157,8 @@ export type DayJSShorthand = string;
  * */
 export type ISO8601 = string;
 export type DurationString = DayJSShorthand | ISO8601;
+
+export interface PopularityThresholdLevel {
+    count: number
+    level: number
+}

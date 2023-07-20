@@ -109,7 +109,7 @@ module.exports = {
             if(interaction.replied) {
                 return;
             }
-            if (!creator.popular) {
+            if (!creator.isPopular()) {
                 // either cannot get popularity from platform (api unsupported) or creator is not popular
                 // so check for self-promo
                 await checkSelfPromotion(interaction, deets.platform, deets.creator as MinimalCreatorDetails, user);

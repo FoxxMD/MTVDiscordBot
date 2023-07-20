@@ -98,7 +98,7 @@ export class PlatformManager {
     async checkPopularity(platform: string, details: MinimalCreatorDetails) {
         const creator = await upsertVideoCreator(platform, details);
         if (creator.popular !== undefined) {
-            return creator.popular;
+            return creator.isPopular();
         }
         if (!ApiSupportedPlatforms.includes(platform)) {
             // nothing we can do about this
@@ -107,7 +107,7 @@ export class PlatformManager {
         let channelDetails = await this.getChannelDetails(platform, details.id);
         creator.populateFromDetails(channelDetails);
         await creator.save();
-        return creator.popular;
+        return creator.isPopular();
     }
 
     async upsertCreatorFromDetails(platform: string, details: MinimalCreatorDetails) {
