@@ -18,6 +18,5 @@ module.exports = {
         const user = await getOrInsertUser(requestedUser,  interaction.guild);
         const standing = await buildStandingProfile(user);
         await interaction.reply({embeds: [standing], ephemeral: true});
-        logger['safety'](`Replied to ${interaction.member.user.username}`, {sendToGuild: true});
     }
 }
