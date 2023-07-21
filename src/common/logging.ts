@@ -1,8 +1,8 @@
 import path from "path";
 import {dataDir, projectDir} from "./index.js";
-import winston, {format, Logger} from '@foxxmd/winston';
+import winston, {format, LogCallback, Logger} from '@foxxmd/winston';
 import {DuplexTransport} from "winston-duplex";
-import {asLogOptions, LogConfig, LogInfo, LogLevel, LogOptions} from "./infrastructure/Atomic.js";
+import {asLogOptions, LogConfig, LogInfo, LogInfoMeta, LogLevel, LogOptions} from "./infrastructure/Atomic.js";
 import process from "process";
 import {ErrorWithCause, stackWithCauses} from "pony-cause";
 import {NullTransport} from 'winston-null';
@@ -22,7 +22,7 @@ export let logPath = path.resolve(dataDir, `./logs`);
 
 winston.loggers.add('noop', {transports: [new NullTransport()]});
 
-export const getLogger = (config: LogConfig = {}, name = 'App'): Logger => {
+export const getLogger = (config: LogConfig = {}, name = 'App'): MTVLogger => {
 
     if (!winston.loggers.has(name)) {
         const errors: (Error | string)[] = [];
@@ -98,9 +98,9 @@ export const getLogger = (config: LogConfig = {}, name = 'App'): Logger => {
                 logger.error(e);
             }
         }
-        return logger;
+        return logger as MTVLogger;
     }
-    return winston.loggers.get(name);
+    return winston.loggers.get(name) as MTVLogger;
 }
 
 const breakSymbol = '<br />';
@@ -344,4 +344,29 @@ const _transformError = (err: Error, seen: Set<Error>) => {
         // we're gonna swallow silently instead of reporting to avoid any infinite nesting and hopefully the original error looks funny enough to provide clues as to what to fix here
         return err;
     }
+}
+
+interface LeveledLogMethod {
+    (message: string, callback: LogCallback): MTVLogger;
+    (message: string, meta: LogInfoMeta, callback: LogCallback): MTVLogger;
+    (message: string, ...meta: LogInfoMeta[]): MTVLogger;
+    (message: any, meta: LogInfoMeta): MTVLogger;
+    (infoObject: object): MTVLogger;
+}
+
+export interface MTVLogger extends Logger {
+    error: LeveledLogMethod;
+    warn: LeveledLogMethod;
+    help: LeveledLogMethod;
+    data: LeveledLogMethod;
+    info: LeveledLogMethod;
+    debug: LeveledLogMethod;
+    safety: LeveledLogMethod;
+    prompt: LeveledLogMethod;
+    http: LeveledLogMethod;
+    verbose: LeveledLogMethod;
+    input: LeveledLogMethod;
+    silly: LeveledLogMethod;
+
+    child(options: Object, customzier?: (objValue: any, srcValue: any, key: any, object:any, source:any, stack:any) => any): MTVLogger;
 }

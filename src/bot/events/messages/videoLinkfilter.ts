@@ -10,10 +10,11 @@ import {oneLine} from "common-tags";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {PlatformManager} from "../../../common/contentPlatforms/PlatformManager.js";
 import {Bot} from "../../Bot.js";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     eventType: Events.MessageCreate,
-    on: async (bot: Bot, logger: Logger, message: Message<boolean>) => {
+    on: async (bot: Bot, logger: MTVLogger, message: Message<boolean>) => {
         if (message.inGuild()) {
             if (message.system) {
                 return;
@@ -67,7 +68,7 @@ module.exports = {
                         `User ${userMention(message.member.user.id)} in 24 hour probation tried to post video link \`${urlParser.create({videoInfo: foundVideoLinks[0]})}\`
                         ${foundVideoLinks.length > 1 ? ` and ${foundVideoLinks.length - 1} others` : ''}
                         in ${channelMention(message.channelId)}`;
-                    logger['safety'](msg, {sendToGuild: true, discordGuild: message.guildId});
+                    logger.safety(msg, {sendToGuild: true, discordGuild: message.guildId});
 
                     await message.member.send({
                         content: oneLine
@@ -84,7 +85,7 @@ module.exports = {
                         `Blacklisted user ${userMention(message.member.user.id)} tried to post video link \`${urlParser.create({videoInfo: foundVideoLinks[0]})}\`
                         ${foundVideoLinks.length > 1 ? ` and ${foundVideoLinks.length - 1} others` : ''}
                         in ${channelMention(message.channelId)}`;
-                    logger['safety'](msg, {sendToGuild: true, discordGuild: message.guildId});
+                    logger.safety(msg, {sendToGuild: true, discordGuild: message.guildId});
 
                     await message.member.send({
                         content: oneLine
@@ -107,7 +108,7 @@ module.exports = {
                                     `User ${userMention(message.member.user.id)} tried to post video link \`${urlParser.create({videoInfo: info})}\`
                                     from blacklisted Creator ${creator.name}
                                     in ${channelMention(message.channelId)}`;
-                                logger['safety'](msg, {sendToGuild: true, discordGuild: message.guildId});
+                                logger.safety(msg, {sendToGuild: true, discordGuild: message.guildId});
 
                                 await message.member.send({
                                     content: oneLine

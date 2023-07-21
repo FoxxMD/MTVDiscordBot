@@ -27,6 +27,7 @@ import {Creator} from "../../../common/db/models/creator.js";
 import {getDurationFromCommand} from "../../../bot/functions/dateInteraction.js";
 import dayjs from "dayjs";
 import {ErrorWithCause} from "pony-cause";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -56,7 +57,7 @@ module.exports = {
                         .setRequired(true))
         )
     ,
-    async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         let interaction: InteractionLike = initialInteraction;
 
@@ -103,7 +104,6 @@ module.exports = {
                     try {
                         await t.commit();
                     } catch (e) {
-                        // @ts-expect-error
                         logger.error(new ErrorWithCause(`Error occurred while setting '${command}' modifier`, {cause: e}), {sendToGuild: true, byDiscordUser: interaction.member.user.id});
                         await interact(interaction, {content: `Error occurred while committing changes`, ephemeral: true});
                         return;

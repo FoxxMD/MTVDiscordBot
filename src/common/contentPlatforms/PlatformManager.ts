@@ -17,16 +17,17 @@ import {parseUrl} from "../../utils/StringUtils.js";
 import {Video} from "../db/models/video.js";
 import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
 import {Creator} from "../db/models/creator.js";
+import {MTVLogger} from "../logging.js";
 
 export class PlatformManager {
 
     protected credentials: Credentials;
-    protected logger: Logger;
+    protected logger: MTVLogger;
 
     protected youtube?: YoutubeClient;
     protected vimeo?: VimeoClient;
 
-    constructor(creds: Credentials, logger: Logger) {
+    constructor(creds: Credentials, logger: MTVLogger) {
         this.credentials = creds;
         this.logger = logger.child({labels: ['Video Parser']}, mergeArr);
 

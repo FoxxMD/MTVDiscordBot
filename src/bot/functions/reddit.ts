@@ -14,6 +14,7 @@ import {Logger} from "@foxxmd/winston";
 import {mergeArr, sleep} from "../../utils/index.js";
 import dayjs from "dayjs";
 import {addShowcaseVideo} from "./showcase.js";
+import {MTVLogger} from "../../common/logging.js";
 
 export const getHotToVideos = async (bot: Bot): Promise<RedditVideo[]> => {
 
@@ -43,7 +44,7 @@ export const getHotToVideos = async (bot: Bot): Promise<RedditVideo[]> => {
     return videos;
 }
 
-export const processRedditToShowcase = async (dguild: DiscordGuild, videos: RedditVideo[], parentLogger: Logger) => {
+export const processRedditToShowcase = async (dguild: DiscordGuild, videos: RedditVideo[], parentLogger: MTVLogger) => {
     const logger = parentLogger.child({labels: ['Reddit Hot']}, mergeArr);
 
     const guild = await getOrInsertGuild(dguild);

@@ -34,6 +34,7 @@ import {commaListsAnd} from "common-tags";
 import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
+import {MTVLogger} from "../../common/logging.js";
 
 export const addFirehoseVideo = async (interaction: InteractionLike, url: string, video: MinimalVideoDetails, user: User) => {
 
@@ -108,7 +109,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, url: string
     }
 }
 
-export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: Logger) => {
+export const processFirehoseVideos = async (dguild: DiscordGuild, parentLogger: MTVLogger) => {
 
     const flogger = parentLogger.child({labels: ['Firehose']}, mergeArr);
 

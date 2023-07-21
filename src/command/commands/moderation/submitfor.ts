@@ -23,6 +23,7 @@ import {
     checkLengthConstraints
 } from "../../../bot/functions/userSubmissionFuncs.js";
 import {videoDetailsToUrl} from "../../../common/contentPlatforms/UrlParser.js";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -36,7 +37,7 @@ module.exports = {
         .addStringOption(option => option.setName('url')
             .setDescription('URL of the Video')
             .setRequired(true)),
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         const behalfOf = interaction.options.getMember('user') as GuildMember;
         if(interaction.member.user.id === behalfOf.user.id) {

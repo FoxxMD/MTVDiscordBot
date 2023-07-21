@@ -12,6 +12,7 @@ import {Creator} from "../../common/db/models/creator.js";
 import {populateGuildDefaults} from "./guildUtil.js";
 import dayjs from "dayjs";
 import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
+import {MTVLogger} from "../../common/logging.js";
 
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild) => {
     // TODO reduce eager loading
@@ -37,7 +38,7 @@ export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildM
     }
 }
 
-export const getOrInsertGuild = async (dguild: DiscordGuild, logger?: Logger) => {
+export const getOrInsertGuild = async (dguild: DiscordGuild, logger?: MTVLogger) => {
 
     try {
         let guild = await Guild.findOne({where: {id: dguild.id}, include: 'settings'});

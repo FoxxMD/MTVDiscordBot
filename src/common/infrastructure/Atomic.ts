@@ -52,13 +52,17 @@ export const asLogOptions = (obj: LogConfig = {}): obj is LogOptions => {
     });
 }
 
-export interface LogInfo {
+export interface LogInfo extends LogInfoMeta {
     message: string
     [MESSAGE]: string,
     level: string
     timestamp: string
-    labels?: string[]
     transport?: string[]
+    stack?: string
+}
+
+export interface LogInfoMeta {
+    labels?: string[]
     discordGuild?: string | DiscordGuild
     guild?: string | Guild
     sendToGuild?: boolean
@@ -66,7 +70,7 @@ export interface LogInfo {
     discordMessage?: string | MessageLike,
     channel?: string | TextBasedChannel
     toChannel?: string | TextBasedChannel
-    stack?: string
+    [key: string]: any
 }
 
 export const staffRoleKeywords = ['moderation', 'admin'];

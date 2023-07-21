@@ -7,10 +7,10 @@ import winston, {Logger} from "@foxxmd/winston";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {SimpleError} from "../../utils/Errors.js";
 import {getOrInsertGuild} from "./repository.js";
-import {getLogger} from "../../common/logging.js";
+import {getLogger, MTVLogger} from "../../common/logging.js";
 import {ErrorWithCause} from "pony-cause";
 
-export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuild, logger: Logger) => {
+export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuild, logger: MTVLogger) => {
 
     const channels =  await discGuild.channels.fetch();
 

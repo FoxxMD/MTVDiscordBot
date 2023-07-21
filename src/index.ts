@@ -5,7 +5,7 @@ import relativeTime from 'dayjs/plugin/relativeTime.js';
 import duration from 'dayjs/plugin/duration.js';
 import dotenv from 'dotenv';
 import {Logger} from "@foxxmd/winston";
-import {getLogger, isLogLineMinLevel, logLevels} from "./common/logging.js";
+import {getLogger, isLogLineMinLevel, logLevels, MTVLogger} from "./common/logging.js";
 import {parseConfigFromSources} from "./common/config/ConfigBuilder.js";
 import {initDB} from "./common/db/index.js";
 import {dataDir} from "./common/index.js";
@@ -22,7 +22,7 @@ dayjs.extend(duration);
 
 dotenv.config();
 
-let logger: Logger = getLogger({file: false}, 'init');
+let logger: MTVLogger = getLogger({file: false}, 'init');
 logger.debug(`Data Dir ENV: ${process.env.DATA_DIR} -> Resolved: ${dataDir}`);
 
 (async function () {

@@ -31,6 +31,7 @@ import {Creator} from "../../../common/db/models/creator.js";
 import {getCreatorFromCommand} from "../../../bot/functions/creatorInteractions.js";
 import {getDurationFromCommand} from "../../../bot/functions/dateInteraction.js";
 import dayjs from "dayjs";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -113,7 +114,7 @@ module.exports = {
                         .setDescription('Find creator by name (with confirmation)'))
         )
     ,
-    async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         let interaction: InteractionLike = initialInteraction;
 
@@ -153,7 +154,6 @@ module.exports = {
                         ccRole = await getContentCreatorDiscordRole(guild, interaction.guild);
                     } catch (e) {
                         const err = new ErrorWithCause('User was successfully associated with creator but did not receive Content Creator role due to an error', {cause: e});
-                        // @ts-expect-error
                         logger.warn(err, {sendToGuild: true, byDiscordUser: interaction.member.user.id});
                         return interaction.reply({
                             content: `User was successfully associated with creator but did not receive Content Creator role due to an error: ${e.message}`,
@@ -232,7 +232,6 @@ module.exports = {
                     try {
                         await t.commit();
                     } catch (e) {
-                        // @ts-expect-error
                         logger.error(new ErrorWithCause('Error occurred while committing changes'), {sendToGuild: true, byDiscordUser: interaction.member.user.id});
                         await interact(interaction, {content: `Error occurred while committing changes and has been logged`, ephemeral: true});
                         return;

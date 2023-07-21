@@ -11,6 +11,7 @@ import {Logger} from "@foxxmd/winston";
 import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 import {Bot} from "../../../bot/Bot.js";
 import {capitalize} from "../../../utils/index.js";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -90,7 +91,7 @@ module.exports = {
                         .setRequired(false))
         )
     ,
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         const guild = await getOrInsertGuild(interaction.guild, logger);
 

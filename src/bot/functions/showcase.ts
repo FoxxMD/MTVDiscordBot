@@ -24,6 +24,7 @@ import {ErrorWithCause} from "pony-cause";
 import {mergeArr} from "../../utils/index.js";
 import {Video} from "../../common/db/models/video.js";
 import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
+import {MTVLogger} from "../../common/logging.js";
 
 export interface ShowcaseOptions
 {
@@ -31,7 +32,7 @@ export interface ShowcaseOptions
     externalUrl?: string
     videoSubmission?: VideoSubmission
 }
-export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger: Logger, options?: ShowcaseOptions) => {
+export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger: MTVLogger, options?: ShowcaseOptions) => {
 
     const {
         videoSubmission,

@@ -1,12 +1,12 @@
 import {Client, Collection, Events} from "discord.js";
 import {Logger} from "@foxxmd/winston";
 import {LogLevel} from "./common/infrastructure/Atomic.js";
-import {logLevels} from "./common/logging.js";
+import {logLevels, MTVLogger} from "./common/logging.js";
 import {mergeArr} from "./utils/index.js";
 
 export class BotClient extends Client {
     commands: Collection<any, any>
-    initLogging = (level: LogLevel, logger: Logger) => {
+    initLogging = (level: LogLevel, logger: MTVLogger) => {
 
         const clientLogger = logger.child({labels: ['Discord']}, mergeArr);
 

@@ -5,7 +5,7 @@ import {mergeArr} from "../utils/index.js";
 import {OperatorConfig} from "../common/infrastructure/OperatorConfig.js";
 import {initCommands, initEvents, registerGuildCommands} from "../command/handler.js";
 import {Events, Guild as DiscordGuild, TextBasedChannel, TextChannel, userMention} from "discord.js";
-import {isLogLineMinLevel, logLevels} from "../common/logging.js";
+import {isLogLineMinLevel, logLevels, MTVLogger} from "../common/logging.js";
 import {getOrInsertGuild, getOrInsertVideo, getVideoByVideoId} from "./functions/repository.js";
 import {AsyncTask, SimpleIntervalJob, ToadScheduler} from "toad-scheduler";
 import {createProcessFirehoseTask} from "./tasks/processFirehose.js";
@@ -24,11 +24,11 @@ import {buildLogStatement} from "./utils/embedUtils.js";
 export class Bot {
     public client: BotClient;
     public db: Sequelize;
-    public logger: Logger;
+    public logger: MTVLogger;
     public config: OperatorConfig;
     public reddit?: RedditClient;
 
-    constructor(client: BotClient, db: Sequelize, logger: Logger, config: OperatorConfig) {
+    constructor(client: BotClient, db: Sequelize, logger: MTVLogger, config: OperatorConfig) {
         this.client = client;
         this.db = db;
         this.logger = logger.child({labels: ['Bot']}, mergeArr);

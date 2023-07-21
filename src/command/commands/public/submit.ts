@@ -31,6 +31,7 @@ import {GuildSettings} from "../../../common/db/models/GuildSettings.js";
 import {memberHasRoleType} from "../../../bot/functions/userUtil.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {videoDetailsToUrl} from "../../../common/contentPlatforms/UrlParser.js";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -39,7 +40,7 @@ module.exports = {
         .addStringOption(option => option.setName('url')
             .setDescription('URL of the Video')
             .setRequired(true)),
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         const user = await getOrInsertUser(interaction.member, interaction.guild);
         const hasAllowedRole = await memberHasRoleType(ROLE_TYPES.APPROVED, interaction);

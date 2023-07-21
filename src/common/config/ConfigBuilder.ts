@@ -13,9 +13,9 @@ import * as operatorSchema from '../schema/operator.json';
 import merge from 'deepmerge';
 import {LogLevel} from "../infrastructure/Atomic.js";
 import {overwriteMerge} from "../../utils/index.js";
-import {getLogger} from "../logging.js";
+import {getLogger, MTVLogger} from "../logging.js";
 
-export const validateJson = <T>(config: object, schema: Schema, logger: Logger): T => {
+export const validateJson = <T>(config: object, schema: Schema, logger: MTVLogger): T => {
     const ajv = createAjvFactory(logger);
     const valid = ajv.validate(schema, config);
     if (valid) {
@@ -68,7 +68,7 @@ export const validateJson = <T>(config: object, schema: Schema, logger: Logger):
 
 export const parseConfigFromSources = async () => {
 
-    const initLogger = winston.loggers.get('init');
+    const initLogger = winston.loggers.get('init') as MTVLogger;
 
     let configDoc: YamlOperatorConfigDocument
     let configFromFile: OperatorJsonConfig = {};

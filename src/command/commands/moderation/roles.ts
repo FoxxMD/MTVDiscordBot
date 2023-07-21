@@ -15,6 +15,7 @@ import {markdownTag} from "../../../utils/StringUtils.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {stripIndent} from "common-tags";
 import * as repl from "repl";
+import {MTVLogger} from "../../../common/logging.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -70,7 +71,7 @@ module.exports = {
                 .setDescription('Show all role associations')
         )
     ,
-    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: Logger, bot: Bot) {
+    async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
 
         const guild = await getOrInsertGuild(interaction.guild, logger);
 

@@ -8,14 +8,7 @@ import {ErrorWithCause} from "pony-cause";
 import {format, Logger} from "@foxxmd/winston";
 import {interact, mergeArr} from "../utils/index.js";
 import {Bot} from "../bot/Bot.js";
-import {LogInfo} from "../common/infrastructure/Atomic.js";
-import {isLogLineMinLevel} from "../common/logging.js";
-import {Guild} from "../common/db/models/Guild.js";
-import {getOrInsertGuild} from "../bot/functions/repository.js";
-import {MESSAGE, SPLAT} from "triple-beam";
-import {GuildSettings} from "../common/db/models/GuildSettings.js";
-import {detectErrorStack} from "../utils/StringUtils.js";
-import ReadableStream = NodeJS.ReadableStream;
+import {MTVLogger} from "../common/logging.js";
 
 export const initCommands = async (client: BotClient, credentials: DiscordCredentials, bot: Bot) => {
 
@@ -101,7 +94,7 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
     return slashCommandData;
 }
 
-export const registerGuildCommands = async (credentials: DiscordCredentials, guildId: string, slashCommandData: any[], logger: Logger) => {
+export const registerGuildCommands = async (credentials: DiscordCredentials, guildId: string, slashCommandData: any[], logger: MTVLogger) => {
     // register commands
 
     if(slashCommandData.length === 0) {
@@ -144,7 +137,6 @@ export const initEvents = async (client: BotClient, bot: Bot) => {
                         try {
                             await event.on(bot, eventLogger, ...args);
                         } catch (e) {
-                            // @ts-expect-error
                             eventsLogger.error(new ErrorWithCause(`Error occurred while handling event ${event.eventType} in handler ${file}`, {cause: e}), {sendToGuild: true});
                         }
                     });
