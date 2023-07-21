@@ -1,6 +1,10 @@
 import pathUtil from "path";
 import {accessSync, constants, promises} from "fs";
 import {ErrorWithCause} from "pony-cause";
+import {parse} from 'csv-parse';
+import { finished } from 'stream/promises';
+import fs from 'fs';
+import ReadableStream = NodeJS.ReadableStream;
 
 export const fileOrDirectoryIsWriteable = (location: string) => {
     const pathInfo = pathUtil.parse(location);
@@ -49,3 +53,20 @@ export async function readFile(this: any, path: any, {throwOnNotFound = true} = 
         throw new ErrorWithCause(`Encountered error while parsing file: ${path}`, {cause: e})
     }
 }
+
+// https://csv.js.org/parse/recipes/promises/
+export const processCsvStream = async <T = any>(stream: ReadableStream): Promise<T[]> => {
+    const records = [];
+    const parser = stream.pipe(parse({
+        columns: header =>
+            header.map(column => column.toLowerCase())
+        }));
+    parser.on('readable', function(){
+        let record; while ((record = parser.read()) !== null) {
+            // Work with each record
+            records.push(record);
+        }
+    });
+    await finished(parser);
+    return records as T[];
+};

@@ -4,20 +4,26 @@ import {
     AllowedVideoProviders,
     ApiSupportedPlatforms,
     FullCreatorDetails,
-    MinimalCreatorDetails, Platform,
+    MinimalCreatorDetails, MinimalVideoDetails, Platform,
     VideoDetails
 } from "../infrastructure/Atomic.js";
 import {Logger} from "@foxxmd/winston";
-import {mergeArr} from "../../utils/index.js";
+import {mergeArr, sleep} from "../../utils/index.js";
 import {ErrorWithCause} from "pony-cause";
 import {urlParser} from './UrlParser.js';
 import {VimeoClient} from "./clients/VimeoClient.js";
-import {getCreatorByDetails, getVideoByVideoId, upsertVideoCreator} from "../../bot/functions/repository.js";
+import {
+    getCreatorByDetails,
+    getOrInsertVideo,
+    getVideoByVideoId,
+    upsertVideoCreator
+} from "../../bot/functions/repository.js";
 import {parseUrl} from "../../utils/StringUtils.js";
 import {Video} from "../db/models/video.js";
 import {VideoInfo} from "js-video-url-parser/lib/urlParser.js";
 import {Creator} from "../db/models/creator.js";
 import {MTVLogger} from "../logging.js";
+import dayjs from "dayjs";
 
 export class PlatformManager {
 
@@ -26,6 +32,7 @@ export class PlatformManager {
 
     protected youtube?: YoutubeClient;
     protected vimeo?: VimeoClient;
+    protected lastFetchAt = dayjs().subtract(1, 'hour');
 
     constructor(creds: Credentials, logger: MTVLogger) {
         this.credentials = creds;
@@ -39,6 +46,15 @@ export class PlatformManager {
         }
     }
 
+    async rateLimit(msHavePassed = 500) {
+        const timeSince = dayjs().diff(this.lastFetchAt, 'milliseconds');
+        if(timeSince < msHavePassed) {
+            this.logger.debug(`RATE LIMIT: waiting until ${msHavePassed - timeSince}ms have passed`);
+            await sleep(msHavePassed - timeSince);
+        }
+        this.lastFetchAt = dayjs();
+    }
+
     async getVideoDetails(urlVal: string, includeCreator?: boolean): Promise<[ Partial<VideoDetails>, VideoInfo<Record<string, any>, string>?, Video?, Creator?]> {
         const url = parseUrl(urlVal);
         let details: Partial<VideoDetails> = {
@@ -47,6 +63,7 @@ export class PlatformManager {
             platform: url.hostname
         };
 
+        let video: Video | undefined = undefined;
         const urlDetails = urlParser.parse(url.toString());
         if (urlDetails !== undefined) {
             const existingVideo = await getVideoByVideoId(urlDetails.id, urlDetails.provider);
@@ -61,7 +78,9 @@ export class PlatformManager {
                 case 'youtube':
                     if (this.youtube !== undefined) {
                         try {
+                            await this.rateLimit();
                             details = await this.youtube.getVideoDetails(urlDetails.id);
+                            video = await getOrInsertVideo(details as MinimalVideoDetails);
                         } catch (e) {
                             this.logger.warn(new ErrorWithCause(`Unable to get video details for ${url}`, {cause: e}));
                         }
@@ -70,7 +89,9 @@ export class PlatformManager {
                 case 'vimeo':
                     if (this.vimeo !== undefined) {
                         try {
+                            await this.rateLimit();
                             details = await this.vimeo.getVideoDetails(urlDetails.id);
+                            video = await getOrInsertVideo(details as MinimalVideoDetails);
                         } catch (e) {
                             this.logger.warn(new ErrorWithCause(`Unable to get video details for ${url}`, {cause: e}));
                         }
@@ -84,7 +105,7 @@ export class PlatformManager {
             creator = await this.upsertCreatorFromDetails(details.platform, details.creator as MinimalCreatorDetails);
         }
 
-        return [details, urlDetails, undefined, creator];
+        return [details, urlDetails, video, creator];
     }
 
     async getChannelDetails(platform: string, channelId: string): Promise<FullCreatorDetails | undefined> {

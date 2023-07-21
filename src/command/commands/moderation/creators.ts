@@ -22,7 +22,7 @@ import {
     MinimalCreatorDetails,
     SpecialRoleType
 } from "../../../common/infrastructure/Atomic.js";
-import {capitalize, interact} from "../../../utils/index.js";
+import {capitalize, interact, RateLimitFunc} from "../../../utils/index.js";
 import {markdownTag} from "../../../utils/StringUtils.js";
 import {commaLists, stripIndent} from "common-tags";
 import {getContentCreatorDiscordRole} from "../../../bot/functions/guildUtil.js";
@@ -32,6 +32,7 @@ import {getCreatorFromCommand} from "../../../bot/functions/creatorInteractions.
 import {getDurationFromCommand} from "../../../bot/functions/dateInteraction.js";
 import dayjs from "dayjs";
 import {MTVLogger} from "../../../common/logging.js";
+import {Transaction} from "sequelize";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -77,6 +78,9 @@ module.exports = {
                 .addStringOption(opt =>
                     opt.setName('reason')
                         .setDescription('Reason for adding to allow list'))
+                .addAttachmentOption(opt =>
+                    opt.setName('file')
+                        .setDescription('Allow creators from CSV'))
                 .addStringOption(opt =>
                     opt.setName('expires-at')
                         .setDescription(`EX: '2 days' or leave empty for never`))
@@ -93,6 +97,9 @@ module.exports = {
                 .addStringOption(opt =>
                     opt.setName('name')
                         .setDescription('Find creator by name (with confirmation)'))
+                .addAttachmentOption(opt =>
+                    opt.setName('file')
+                        .setDescription('Deny creators from CSV'))
                 .addStringOption(opt =>
                     opt.setName('reason')
                         .setDescription('Reason for adding to deny list'))
@@ -112,6 +119,10 @@ module.exports = {
                 .addStringOption(opt =>
                     opt.setName('name')
                         .setDescription('Find creator by name (with confirmation)'))
+                .addAttachmentOption(opt =>
+                    opt.setName('file')
+                        .setDescription('Expire creators from CSV'))
+
         )
     ,
     async execute(initialInteraction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
@@ -121,10 +132,12 @@ module.exports = {
         const guild = await getOrInsertGuild(interaction.guild, logger);
 
         const [_, duration] = await getDurationFromCommand(initialInteraction, {currentInteraction: interaction});
-        const [creatorInteraction, creator] = await getCreatorFromCommand(interaction, bot);
-        if(creator === undefined) {
+        const [creatorInteraction, creators] = await getCreatorFromCommand(interaction, bot, logger, {allowFile: true});
+        if(creators.length === 0) {
             return;
         }
+        // user commands only use one creator at a time
+        const creator = creators[0];
         interaction = creatorInteraction;
 
         const command = initialInteraction.options.getSubcommand();
@@ -209,34 +222,65 @@ module.exports = {
             case 'flag-expire':
                 const user = await getOrInsertUser(interaction.member, interaction.guild);
                 const reason = initialInteraction.options.getString('reason') ?? `Add via ${command} command`;
-                if(interaction.replied) {
-                    return;
-                }
+
+                const statusUpdate = new RateLimitFunc(5000, false, logger);
                 if(command === 'flag-expire') {
-                    await creator.expireModifiers(undefined);
-                    await creator.save();
-                    logger.info(`Expired any existing flags on ${creator.name}`, {sendToGuild: true, byDiscordUser: interaction.member.user.id});
+                    let index = 0;
+                    let t = await Creator.sequelize.transaction();
+                    for (const c of creators) {
+                        await creator.expireModifiers(undefined, t);
+                        //await creator.save({transaction: t});
+                        index++;
+                        await statusUpdate.exec(async () => {
+                            await interact(interaction, {
+                                content: `Expired flags on ${index} of ${creators.length} creators`,
+                            }, {edit: true});
+                            logger.debug(`Expired flags on ${index} of ${creators.length} creators`);
+                        }, index % 10 === 0);
+                        if(index % 50 === 0) {
+                            await t.commit();
+                            t = await Creator.sequelize.transaction();
+                        }
+                    }
+
+                    logger.info(`Expired any existing flags on ${creators.length === 1 ? creator.name : `${creators.length} creators`}`, {sendToGuild: true, byDiscordUser: interaction.member.user.id});
                     await interact(interaction, {
-                        content: `Expired any existing flags on ${creator.name}`,
+                        content: `Expired any existing flags on ${creators.length === 1 ? creator.name : `${creators.length} creators`}`,
                         ephemeral: true
                     });
                 } else {
-                    const t = await Creator.sequelize.transaction();
-                    await creator.expireModifiers(undefined, t);
-                    const mod = await creator.createModifier({
-                        flag: command.includes('allow') ? 'allow' : 'deny',
-                        createdById: user.id,
-                        reason,
-                        expiresAt: duration === undefined ? undefined : dayjs().add(duration).toDate()
-                    });
-                    try {
-                        await t.commit();
-                    } catch (e) {
-                        logger.error(new ErrorWithCause('Error occurred while committing changes'), {sendToGuild: true, byDiscordUser: interaction.member.user.id});
-                        await interact(interaction, {content: `Error occurred while committing changes and has been logged`, ephemeral: true});
-                        return;
+                    const exp = duration === undefined ? undefined : dayjs().add(duration).toDate()
+                    let index = 0;
+                    let t: Transaction | undefined = await Creator.sequelize.transaction();
+                    for (const c of creators) {
+                        if(t === undefined) {
+                            t =  await Creator.sequelize.transaction();
+                        }
+                        // if(!c.isPopular()) {
+                        //     await c.expireModifiers(undefined, t);
+                        //     await c.createModifier({
+                        //         flag: command.includes('allow') ? 'allow' : 'deny',
+                        //         createdById: user.id,
+                        //         reason,
+                        //         expiresAt: exp
+                        //     }, {transaction: t});
+                        // }
+                        index++;
+                        await statusUpdate.exec(async () => {
+                            await interact(interaction, {
+                                content: `Added ${command.includes('allow') ? 'ALLOW' : 'DENY'} flags on ${index} of ${creators.length} creators`,
+                            }, {edit: true});
+                            logger.debug(`Expired flags on ${index} of ${creators.length} creators`);
+                        }, index % 10 === 0);
+                        if(index % 100 === 0) {
+                            await t.commit();
+                            t = undefined;
+                        }
                     }
-                    const msg = `Added ${creator.name} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${duration === undefined ? 'Never' : time(mod.expiresAt)}`;
+                    if(t !== undefined) {
+                        await t.commit();
+                    }
+                    const msg = `Added ${creators.length === 1 ? creator.name : `${creators.length} creators`} to ${command.includes('allow') ? 'ALLOW' : 'DENY'} list. Expires: ${exp === undefined ? 'Never' : time(exp)}`;
                     logger.info(msg, {sendToGuild: true, byDiscordUser: interaction.member.user.id});
                     await interact(interaction, {
                         content: msg,

@@ -12,23 +12,32 @@ import {
 } from "discord.js";
 import {Creator} from "../../common/db/models/creator.js";
 import {PlatformManager} from "../../common/contentPlatforms/PlatformManager.js";
-import {commaLists} from "common-tags";
+import {commaListsOr, commaLists} from "common-tags";
 import {Op} from "sequelize";
 import {MessageActionRowComponentBuilder} from "@discordjs/builders";
 import {Bot} from "../Bot.js";
+import fetch from 'node-fetch';
+import {ErrorWithCause} from "pony-cause";
+import {MTVLogger} from "../../common/logging.js";
+import {processCsvStream} from "../../utils/io.js";
+import dayjs from "dayjs";
 
 
 export interface CreatorCommandParsingOptions {
     link?: string
     id?: string
-    name?: string
+    name?: string,
+    file?: string,
+    allowFile?: boolean
 }
 
-export const getCreatorFromCommand = async (initialInteraction: ChatInputCommandInteraction<CacheType>, bot: Bot, options?: CreatorCommandParsingOptions): Promise<[InteractionLike, Creator?]> => {
+export const getCreatorFromCommand = async (initialInteraction: ChatInputCommandInteraction<CacheType>, bot: Bot, logger: MTVLogger, options?: CreatorCommandParsingOptions): Promise<[InteractionLike, Creator[]?]> => {
     const {
         link: linkName = 'link',
         id: idName = 'id',
-        name: nameName = 'name'
+        name: nameName = 'name',
+        file: fileName = 'file',
+        allowFile = false,
     } = options || {};
 
     let interaction: InteractionLike = initialInteraction;
@@ -36,24 +45,26 @@ export const getCreatorFromCommand = async (initialInteraction: ChatInputCommand
     const link = interaction.options.getString(linkName);
     const id = interaction.options.getString(idName);
     const name = interaction.options.getString(nameName);
+    const file = interaction.options.getAttachment(fileName);
 
-    let creator: Creator;
+    const manager = new PlatformManager(bot.config.credentials, bot.logger);
+
+    let creators: Creator[] = [];
 
     if (link !== null && link !== undefined) {
-        const manager = new PlatformManager(bot.config.credentials, bot.logger);
 
         const [deets, urlDetails, video] = await manager.getVideoDetails(link);
 
         if (!ApiSupportedPlatforms.includes(deets.platform)) {
             await interaction.reply({
-                content: commaLists`The platform for this video (${deets.platform}) is not supported by the API. Platform must be one of: ${ApiSupportedPlatforms}`,
+                content: commaListsOr`The platform for this video (${deets.platform}) is not supported by the API. Platform must be one of: ${ApiSupportedPlatforms}`,
                 ephemeral: true
             })
             return [interaction];
         }
-        creator = await manager.upsertCreatorFromDetails(deets.platform, deets.creator as MinimalCreatorDetails);
+        creators.push(await manager.upsertCreatorFromDetails(deets.platform, deets.creator as MinimalCreatorDetails));
     } else if (id !== null && id !== undefined) {
-        creator = await Creator.findByPk(id);
+        const creator = await Creator.findByPk(id);
         if (creator === null || creator === undefined) {
             await interaction.reply({
                 content: `No Creator exists with the ID ${id}`,
@@ -71,7 +82,7 @@ export const getCreatorFromCommand = async (initialInteraction: ChatInputCommand
             return [interaction];
         }
         if (creators.length === 1) {
-            creator = creators[0];
+            creators.push(creators[0]);
         } else {
 
             const select = new StringSelectMenuBuilder()
@@ -109,14 +120,75 @@ export const getCreatorFromCommand = async (initialInteraction: ChatInputCommand
                 return [interaction];
             }
             const creatorId = Number.parseInt(confirmation.values[0]);
-            creator = await Creator.findByPk(creatorId);
+            creators.push(await Creator.findByPk(creatorId));
+        }
+    } else if (allowFile && file !== null && file !== undefined) {
+        if (!file.name.includes('.csv')) {
+            await interaction.reply({
+                content: 'File type must be .csv',
+                ephemeral: true
+            });
+            return [interaction];
+        }
+        await interaction.deferReply({ephemeral: true});
+        try {
+            logger.debug(`Getting creator records from ${file.url}...`);
+            const content = await fetch(file.url);
+            const records = await processCsvStream<CreatorRowObject>(content.body);
+            const total = records.length;
+            logger.debug(`Found ${total} records`);
+            let processed = 0;
+            let lastUpdate = dayjs();
+            let errors = 0;
+            await interaction.editReply({content: `Extracting Creators, processed ${processed} of ${total}`});
+            for (const rec of records) {
+                // TODO add way to build creator from provider/name, only URL for now
+                if (rec.url !== undefined) {
+                    try {
+                        const [deets, urlDetails, video, extractedCreator] = await manager.getVideoDetails(rec.url, true);
+                        if (extractedCreator !== undefined) {
+                            creators.push(extractedCreator);
+                        }
+                    } catch (e) {
+                        logger.warn(new ErrorWithCause('Failed to parse Video from URL', {cause: e}));
+                        errors++;
+                        continue;
+                    }
+
+                }
+                processed++;
+                if (processed % 20 === 0 && dayjs().diff(lastUpdate, 'ms') > 10000) {
+                    logger.debug(`Extracting Creators, processed ${processed} of ${total}`);
+                    await interaction.editReply({content: `Extracting Creators, processed ${processed} of ${total} (${errors} errors)`});
+                    lastUpdate = dayjs();
+                }
+            }
+            await interaction.editReply({content: `${processed} Creators extracted (${errors} errors)`});
+        } catch (e) {
+            logger.error(new ErrorWithCause(`Error occurred while trying to get attachment ${file.url}`, {cause: e}), {
+                sendToGuild: true,
+                byDiscordUser: interaction.member.user.id
+            });
+            await interaction.editReply({content: 'Error occurred while trying to get attachment'});
+            return [interaction];
         }
     } else {
+        const validInput = [linkName, idName,nameName];
+        if(allowFile) {
+            validInput.push(fileName);
+        }
         await interaction.reply({
-            content: `Must provide one of:  ${linkName}, ${idName}, or ${nameName}`,
+            content: commaListsOr`Must provide one of: ${validInput}`,
             ephemeral: true
         })
         return [interaction];
     }
-    return [interaction, creator];
+    return [interaction, creators];
+}
+
+export interface CreatorRowObject {
+    provider?: string
+    name?: string
+    url?: string
+    [key: string]: any
 }

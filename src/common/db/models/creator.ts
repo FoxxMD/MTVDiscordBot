@@ -106,7 +106,7 @@ export class Creator extends Model<InferAttributes<Creator, {
     }
 
     isPopular() {
-        return this.popular >= 5;
+        return this.popular === null ? false : this.popular >= 5;
     }
 
     get humanId(): NonAttribute<string> {
