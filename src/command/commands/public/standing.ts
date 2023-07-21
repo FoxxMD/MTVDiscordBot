@@ -1,8 +1,8 @@
-import {CacheType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder} from "discord.js";
+import {CacheType, ChatInputCommandInteraction, GuildMember, SlashCommandBuilder, userMention} from "discord.js";
 import {getOrInsertUser} from "../../../bot/functions/repository.js";
-import {buildStandingProfile} from "../../../bot/functions/userUtil.js";
 import {Logger} from "@foxxmd/winston";
 import {Bot} from "../../../bot/Bot.js";
+import {buildStandingProfile} from "../../../bot/utils/embedUtils.js";
 
 module.exports = {
     data: new SlashCommandBuilder()

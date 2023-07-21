@@ -274,3 +274,7 @@ export const detectErrorStack = (str: string) => {
 export const getUrlsFromString = (str: string) => {
     return linkify.find(str).filter(x => x.isLink && x.type === 'url').map(x => x.href);
 }
+
+export const buildDiscordMessageLink = (guildId: string, channelId: string, messageId: string) => {
+    return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
+}

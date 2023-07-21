@@ -4,7 +4,7 @@ import {
     SlashCommandBuilder,
     PermissionFlagsBits,
     ChannelType,
-    CategoryChannel
+    CategoryChannel, channelMention
 } from "discord.js";
 import {getOrInsertGuild} from "../../../bot/functions/repository.js";
 import {Logger} from "@foxxmd/winston";
@@ -117,13 +117,13 @@ module.exports = {
                         break;
                 }
                 const channel = interaction.options.getChannel('channel');
-                if (channel === undefined) {
+                if (channel === undefined || channel === null) {
                     const subChannel = await guild.getSettingValue<string>(settingName);
-                    await interaction.reply({content: `${settingChannel} channel is #${subChannel}`, ephemeral: true});
+                    await interaction.reply({content: `${settingChannel} channel is ${channelMention(subChannel)}`, ephemeral: true});
                 } else {
-                    await guild.upsertSetting(settingName, channel.id);
+                    await guild.upsertSetting(settingName, channel.id, true);
                     await interaction.reply({
-                        content: `Set => ${settingChannel} channel is #${channel.name}`,
+                        content: `Set => ${settingChannel} channel is #${channelMention(channel.id)}`,
                         ephemeral: true
                     });
                 }

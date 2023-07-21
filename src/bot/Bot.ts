@@ -19,6 +19,7 @@ import {MESSAGE, SPLAT} from "triple-beam";
 import {GuildSettings} from "../common/db/models/GuildSettings.js";
 import {detectErrorStack} from "../utils/StringUtils.js";
 import ReadableStream = NodeJS.ReadableStream;
+import {buildLogStatement} from "./utils/embedUtils.js";
 
 export class Bot {
     public client: BotClient;
@@ -122,7 +123,8 @@ export class Bot {
                 const {
                     discordGuild,
                     guild: mtvGuild,
-                    byDiscordUser
+                    byDiscordUser,
+                    toChannel,
                 } = log;
                 let guild: Guild;
                 if (mtvGuild !== undefined) {
@@ -145,42 +147,60 @@ export class Bot {
                         }
                     }
                 }
-                if (guild === undefined) {
+                if (guild === undefined && toChannel === undefined) {
                     logger.warn('Could not resolve Guild for logging!', {[SPLAT]: {discordGuild, guild}});
                     return;
                 }
                 let channelId: string;
                 let channelName: string;
-                if (isLogLineMinLevel(log, 'warn')) {
-                    channelName = GuildSettings.ERROR_CHANNEL;
-                } else if (log.level === 'safety') {
-                    channelName = GuildSettings.SAFETY_CHANNEL;
-                } else {
-                    channelName = GuildSettings.LOGGING_CHANNEL;
-                }
-                channelId = await guild.getSettingValue<string>(channelName);
-                if (channelId === undefined) {
-                    this.logger.warn(`No value set for logging Channel '${channelName}'!`, {[SPLAT]: {guild: guild.id}});
-                    return;
-                }
                 let channel: TextBasedChannel;
-                try {
-                    channel = await this.client.channels.fetch(channelId) as TextBasedChannel;
-                } catch (e) {
-                    logger.warn(new ErrorWithCause(`Unable to fetch Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
-                    return;
-                }
-                try {
-                    let cleanedMessage = log[MESSAGE]
-                        .slice(26) // remove timestamp since discord has their own on message
-                        .replace(/^(\w+)\s*:/, '$1:') // remove whitespace from level padding
-                        .replace(`[Guild ${guild.id}]`, `${byDiscordUser !== undefined ? `[${userMention(byDiscordUser)}]` : ''}`) // remove guild label since we will be reading it in the guild anyway and replace with user who executed, if provided
-                        .slice(0, 1999); // make sure not to hit message character limit
-                    const stackRes = detectErrorStack(cleanedMessage);
-                    if (stackRes !== undefined) {
-                        cleanedMessage = `${cleanedMessage.slice(0, stackRes.index)}\n\`\`\`${cleanedMessage.slice(stackRes.index)}\`\`\``
+
+                if (toChannel !== undefined) {
+                    if (typeof toChannel === 'string') {
+                        channelId = toChannel;
+                        channelName = toChannel;
+                    } else {
+                        channelId = toChannel.id;
+                        channelName = toChannel.toString();
+                        channel = toChannel;
                     }
-                    await channel.send({content: cleanedMessage});
+                } else {
+                    if (isLogLineMinLevel(log, 'warn')) {
+                        channelName = GuildSettings.ERROR_CHANNEL;
+                    } else if (log.level === 'safety') {
+                        channelName = GuildSettings.SAFETY_CHANNEL;
+                    } else {
+                        channelName = GuildSettings.LOGGING_CHANNEL;
+                    }
+                    channelId = await guild.getSettingValue<string>(channelName);
+                    if (channelId === undefined) {
+                        this.logger.warn(`No value set for logging Channel '${channelName}'!`, {[SPLAT]: {guild: guild.id}});
+                        return;
+                    }
+                }
+
+                if (channel === undefined) {
+                    try {
+                        channel = await this.client.channels.fetch(channelId) as TextBasedChannel;
+                    } catch (e) {
+                        logger.warn(new ErrorWithCause(`Unable to fetch Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
+                        return;
+                    }
+                }
+
+                try {
+                    // let cleanedMessage = log[MESSAGE]
+                    //     .slice(26) // remove timestamp since discord has their own on message
+                    //     .replace(/^(\w+)\s*:/, '$1:') // remove whitespace from level padding
+                    //     .replace(`[Guild ${guild.id}]`, `${byDiscordUser !== undefined ? `[${userMention(byDiscordUser)}]` : ''}`) // remove guild label since we will be reading it in the guild anyway and replace with user who executed, if provided
+                    //     .slice(0, 1999); // make sure not to hit message character limit
+                    // const stackRes = detectErrorStack(cleanedMessage);
+                    // if (stackRes !== undefined) {
+                    //     cleanedMessage = `${cleanedMessage.slice(0, stackRes.index)}\n\`\`\`${cleanedMessage.slice(stackRes.index)}\`\`\``
+                    // }
+                    // await channel.send({content: cleanedMessage});
+                    const embed = await buildLogStatement(log, {guildId: guild !== undefined ? guild.id : undefined});
+                    await channel.send({embeds: [embed]});
                 } catch (e) {
                     logger.warn(new ErrorWithCause(`Error occurred while sending log to Channel ${channelId} (${channelName}) for Guild ${guild.id}`, {cause: e}));
                 }

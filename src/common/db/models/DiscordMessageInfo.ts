@@ -15,6 +15,7 @@ import {
 } from "sequelize";
 import {Guild} from "./Guild.js";
 import {Client, TextChannel} from "discord.js";
+import {buildDiscordMessageLink} from "../../../utils/StringUtils.js";
 
 export class DiscordMessageInfo extends Model<InferAttributes<DiscordMessageInfo>, InferCreationAttributes<DiscordMessageInfo>> {
 
@@ -32,7 +33,7 @@ export class DiscordMessageInfo extends Model<InferAttributes<DiscordMessageInfo
   }
 
   getLink = () => {
-    return `https://discord.com/channels/${this.guildId}/${this.channelId}/${this.messageId}`
+    return buildDiscordMessageLink(this.guildId, this.channelId, this.messageId);
   }
 }
 

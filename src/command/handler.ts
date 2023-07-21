@@ -85,7 +85,7 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
             commandLogger.debug(`Executed for ${interaction.user.tag}`, {commandData: interaction.options.data});
         } catch (error) {
             // @ts-ignore
-            commandLogger.error(new ErrorWithCause(`Error occurred while executing for ${interaction.user.tag}`, {cause: error}), {sendToGuild: true});
+            commandLogger.error(new ErrorWithCause(`Error occurred while executing for ${interaction.user.tag}`, {cause: error}), {sendToGuild: true, byDiscordUser: interaction.user.id});
             commandLogger.error('Command Data:', interaction.options.data);
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({

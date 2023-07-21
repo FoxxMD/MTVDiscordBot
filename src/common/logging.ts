@@ -140,6 +140,9 @@ export const defaultFormat = (defaultLabel = 'App') => printf(({
                                                                    discordGuild,
                                                                    guild,
                                                                    byDiscordUser,
+                                                                   channel,
+                                                                   discordMessage,
+                                                                   toChannel,
                                                                    ...rest
                                                                }) => {
     const keys = Object.keys(rest);

@@ -4,7 +4,7 @@ import {
     ChatInputCommandInteraction, Guild as DiscordGuild,
     InteractionResponse, Message,
     MessageComponentInteraction,
-    ModalSubmitInteraction
+    ModalSubmitInteraction, TextBasedChannel
 } from "discord.js";
 import {Guild} from "../db/models/Guild.js";
 
@@ -63,6 +63,10 @@ export interface LogInfo {
     guild?: string | Guild
     sendToGuild?: boolean
     byDiscordUser?: string
+    discordMessage?: string | MessageLike,
+    channel?: string | TextBasedChannel
+    toChannel?: string | TextBasedChannel
+    stack?: string
 }
 
 export const staffRoleKeywords = ['moderation', 'admin'];
