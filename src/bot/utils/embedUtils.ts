@@ -9,7 +9,12 @@ import {
     time,
     userMention
 } from "discord.js";
-import {buildDiscordMessageLink, detectErrorStack, markdownTag} from "../../utils/StringUtils.js";
+import {
+    buildDiscordMessageLink,
+    detectErrorStack,
+    markdownTag,
+    truncateStringToLength
+} from "../../utils/StringUtils.js";
 import {LogInfo, LogLevel, MessageLike} from "../../common/infrastructure/Atomic.js";
 
 export const buildStandingProfile = async (user: User) => {
@@ -83,6 +88,8 @@ export interface LogStatementOptions {
     channel?: TextBasedChannel | string
     guildId?: string
 }
+
+const stackTruncate = truncateStringToLength(1020);
 export const buildLogStatement = async (log: LogInfo, options?: LogStatementOptions) => {
 
     const {
@@ -109,7 +116,7 @@ export const buildLogStatement = async (log: LogInfo, options?: LogStatementOpti
     if(stack !== undefined) {
         embed.addFields({
             name: 'Stacktrace',
-            value: `\`\`\`${stack}\`\`\``.slice(0, 1023)
+            value: `\`\`\`${stackTruncate(stack)}\`\`\``
         })
     }
 
