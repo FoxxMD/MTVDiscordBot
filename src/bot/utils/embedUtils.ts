@@ -16,6 +16,7 @@ import {
     truncateStringToLength
 } from "../../utils/StringUtils.js";
 import {LogInfo, LogLevel, MessageLike} from "../../common/infrastructure/Atomic.js";
+import dayjs from "dayjs";
 
 export const buildStandingProfile = async (user: User) => {
     const submissions = await user.getSubmissions();
@@ -25,11 +26,12 @@ export const buildStandingProfile = async (user: User) => {
     }, [0, 0]);
     const creators = await user.getCreators();
     const level = await user.getSubmissionLevel();
+    const period = dayjs.duration(level.timePeriod, 'seconds');
 
     const embed = new EmbedBuilder()
         .setColor(0x0099FF)
         .setTitle('Your Standing')
-        .setDescription(`Level: ${level.name}`)
+        .setDescription(`Level: ${level.name} (${level.allowedSubmissions} submissions allowed in ${period.asHours()} period)`)
         .setTimestamp()
 
     if (creators.length > 0) {
