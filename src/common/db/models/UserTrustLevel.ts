@@ -7,7 +7,7 @@ import {
   CreationOptional,
   Association,
   Model,
-  NonAttribute, ForeignKey, BelongsToGetAssociationMixin
+  NonAttribute, ForeignKey, BelongsToGetAssociationMixin, BelongsToSetAssociationMixin
 } from "sequelize";
 import {Creator} from "./creator.js";
 import {User} from "./user.js";
@@ -25,9 +25,18 @@ export class UserTrustLevel extends Model<InferAttributes<UserTrustLevel>, Infer
   declare level?: NonAttribute<SubmissionTrustLevel>;
 
   declare getLevel: BelongsToGetAssociationMixin<SubmissionTrustLevel>;
+  declare setLevel: BelongsToSetAssociationMixin<SubmissionTrustLevel, number>;
+
+  declare setGivenBy: BelongsToSetAssociationMixin<User, number>;
+  declare getGivenBy: BelongsToGetAssociationMixin<User>;
 
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  async isModAssigned () {
+    const givenBy = await this.getGivenBy();
+    return givenBy !== undefined && givenBy !== null;
+  }
 
 }
 

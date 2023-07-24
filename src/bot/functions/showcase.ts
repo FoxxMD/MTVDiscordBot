@@ -139,6 +139,13 @@ export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger
             videoSubmission.active = false;
             await videoSubmission.save();
         }
+        if(submitter !== undefined) {
+            const currentLevel = await submitter.getTrustLevel();
+            const modGiven = currentLevel.isModAssigned();
+            if(!modGiven) {
+                await submitter.setCommunityTrustLevel();
+            }
+        }
     } catch (e) {
         const err = new ErrorWithCause(`Failed to add Video ${video.id} to showcase`, {cause: e});
         logger.error(err);

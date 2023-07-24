@@ -30,6 +30,7 @@ import {SpecialRoleType} from "../../infrastructure/Atomic.js";
 import {ShowcasePost} from "./ShowcasePost.js";
 import {AllowDenyModifier, AllowDenyModifierData} from "./AllowDenyModifier.js";
 import dayjs, {Dayjs} from "dayjs";
+import {SubmissionTrustLevel} from "./SubmissionTrustLevel.js";
 
 export class User extends Model<InferAttributes<User, {
     omit: 'submissions' | 'creators' | 'trustLevel'
@@ -140,6 +141,54 @@ export class User extends Model<InferAttributes<User, {
             await t.rollback();
             throw e;
         }
+    }
+
+    getShowcasesCount = async () => {
+        return await ShowcasePost.count({where: {userId: this.id}});
+    }
+
+    calculateCommunityTrust = async () => {
+        const levels = await SubmissionTrustLevel.findAll();
+        const count = await this.getShowcasesCount();
+
+        levels.sort((a, b) => a.acceptableSubmissionsThreshold - b.acceptableSubmissionsThreshold);
+        for(const l of levels) {
+            if(count <= l.acceptableSubmissionsThreshold) {
+                return l;
+            }
+        }
+        // more than the top level, return top level
+        return levels[levels.length - 1];
+    }
+
+    setCommunityTrustLevel = async (levelVal?: number | SubmissionTrustLevel, givenByUser?: User) => {
+        let level: SubmissionTrustLevel;
+        if (levelVal instanceof SubmissionTrustLevel) {
+            level = levelVal;
+        } else if(typeof levelVal === 'number') {
+            const levels = await SubmissionTrustLevel.findAll();
+            levels.sort((a, b) => a.acceptableSubmissionsThreshold - b.acceptableSubmissionsThreshold);
+            for (const l of levels) {
+                if (levelVal <= l.acceptableSubmissionsThreshold) {
+                    level = l;
+                }
+            }
+            // more than the top level, return top level
+            if (level === undefined) {
+                level = levels[levels.length - 1];
+            }
+        } else {
+            level = await this.calculateCommunityTrust();
+        }
+
+        const userLevel = await this.getTrustLevel();
+        const currentUserSubmissionLevel = await userLevel.getLevel();
+        if (currentUserSubmissionLevel.id === level.id) {
+            return;
+        }
+        await userLevel.setLevel(level);
+        await userLevel.setGivenBy(givenByUser);
+        await userLevel.save();
     }
 }
 

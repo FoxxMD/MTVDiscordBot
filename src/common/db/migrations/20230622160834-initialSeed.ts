@@ -6,7 +6,7 @@ const migration: Migration = {
       {acceptableSubmissionsThreshold: 0, name: 'Water', allowedSubmissions: 1, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()},
       {acceptableSubmissionsThreshold: 3, name: 'Appetizer', allowedSubmissions: 2, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()},
       {acceptableSubmissionsThreshold: 5, name: 'Main Course', allowedSubmissions: 3, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()},
-      {acceptableSubmissionsThreshold: 7, name: 'Mukbang Enjoyer', allowedSubmissions: 5, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()},
+      {acceptableSubmissionsThreshold: 7, name: 'Mukbang Enjoyer', allowedSubmissions: 4, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()},
       {acceptableSubmissionsThreshold: 10, name: 'Chef', allowedSubmissions: 5, timePeriod: 86400, createdAt: new Date(), updatedAt: new Date()}
     ]);
   },
