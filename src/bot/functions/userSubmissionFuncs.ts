@@ -25,6 +25,7 @@ import {checkAge, checkBlacklisted, memberHasRoleType} from "./userUtil.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {MessageActionRowComponentBuilder} from "@discordjs/builders";
 import {Creator} from "../../common/db/models/creator.js";
+import {Video} from "../../common/db/models/video.js";
 
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
@@ -82,7 +83,16 @@ export const checkCreatorBlacklisted = async (interaction: InteractionLike, crea
 
 export const checkSelfPromotion = async (interaction: InteractionLike, platform: string, details: MinimalCreatorDetails, user: User) => {
     const creator = await getCreatorByDetails(platform, details);
-    const submissions = await VideoSubmission.findAll({where: {userId: user.id}, /*include: {all: true, nested: true}*/})
+    const submissions = await VideoSubmission.findAll({where: {userId: user.id},
+        include: {
+            model: Video,
+            as: 'video',
+            include: [{
+                model: Creator,
+                as: 'creator'
+            }]
+        }
+    });
     if (submissions.length < 3) {
         // grace period when they have little history
         return;
