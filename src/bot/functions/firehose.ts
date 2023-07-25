@@ -67,7 +67,7 @@ export const addFirehoseVideo = async (interaction: InteractionLike, url: string
             }
             detailParts.push(creatorStr);
         }
-        detailParts.push(`Submitted By: <@${interaction.user.id}>`)
+        detailParts.push(`Submitted By: <@${user.discordId}>`)
         detailParts.push(`Link: ${url}`);
         detailParts.push(`Voting Active: **Yes** (Until ${time(dayjs().add(24, 'hours').toDate())})`)
 
