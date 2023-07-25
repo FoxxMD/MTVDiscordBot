@@ -11,9 +11,11 @@ export const createProcessFirehoseTask = (bot: Bot) => {
         () => {
             return PromisePool
                 .withConcurrency(1)
-                .for(bot.client.guilds.cache)
-                .process(async ([id, dguild]) => {
-                    await processFirehoseVideos(dguild, bot.logger)
+                .for(bot.guilds)
+                .process(async (guild) => {
+                    const logger = bot.logger.child({labels: [`Guild ${guild.id}`]}, mergeArr);
+                    const dguild = await bot.client.guilds.fetch(guild.id);
+                    await processFirehoseVideos(dguild, logger);
                 }).then(({results, errors}) => {
                     if (errors.length > 0) {
                         logger.error(`Encountered errors!`);

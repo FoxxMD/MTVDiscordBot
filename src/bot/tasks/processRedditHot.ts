@@ -12,10 +12,12 @@ export const createRedditHotTask = (bot: Bot) => {
         (): Promise<any> => {
             return PromisePool
                 .withConcurrency(1)
-                .for(bot.client.guilds.cache)
-                .process(async ([id, dguild]) => {
+                .for(bot.guilds)
+                .process(async (guild) => {
+                    const logger = bot.logger.child({labels: [`Guild ${guild.id}`]}, mergeArr);
+                    const dguild = await bot.client.guilds.fetch(guild.id);
                     const hotFeed = await getHotToVideos(bot);
-                    await processRedditToShowcase(dguild, hotFeed, bot.logger);
+                    await processRedditToShowcase(dguild, hotFeed, logger);
                 }).then(({results, errors}) => {
                     if (errors.length > 0) {
                         logger.error(`Encountered errors!`);
