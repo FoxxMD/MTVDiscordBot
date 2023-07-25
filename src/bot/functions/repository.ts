@@ -13,6 +13,7 @@ import {populateGuildDefaults} from "./guildUtil.js";
 import dayjs from "dayjs";
 import {ShowcasePost} from "../../common/db/models/ShowcasePost.js";
 import {MTVLogger} from "../../common/logging.js";
+import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
 
 export const getOrInsertUser = async (member: GuildMember | APIInteractionGuildMember, dguild: DiscordGuild) => {
     // TODO reduce eager loading
@@ -91,6 +92,19 @@ export const getActiveSubmissions = async (guild: Guild) => {
             }
         ]
     });
+}
+
+export const getSubmissionByChannelAndMessageId = async (channelId: string, messageId: string) => {
+    return await VideoSubmission.findOne({
+        include: {
+            model: DiscordMessageInfo,
+            as: 'message',
+            where: {
+                channelId,
+                messageId
+            }
+        }
+    })
 }
 
 export const getRecentSubmissionsByVideo = async (guild: Guild, video: Video, moreRecentThan: Date = dayjs().subtract(1, 'month').toDate()) => {
