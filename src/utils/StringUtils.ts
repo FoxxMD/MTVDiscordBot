@@ -2,7 +2,13 @@ import {Duration} from "dayjs/plugin/duration.js";
 import {DurationString, NamedGroup, numberFormatOptions, RegExResult} from "../common/infrastructure/Atomic.js";
 import {SimpleError} from "./Errors.js";
 import dayjs from "dayjs";
-import {stripIndentTransformer, TemplateTag, TemplateTransformer, trimResultTransformer} from 'common-tags'
+import {
+    replaceResultTransformer,
+    stripIndentTransformer,
+    TemplateTag,
+    TemplateTransformer,
+    trimResultTransformer
+} from 'common-tags'
 import normalizeUrl from "normalize-url";
 import {
     REGEX_TIME_FULL,
@@ -148,6 +154,16 @@ export const markdownTag = new TemplateTag(
     markdownListTransformer,
     stripIndentTransformer('all'),
     trimResultTransformer()
+);
+
+// https://github.com/zspecza/common-tags/issues/176#issuecomment-1650242734
+export const doubleReturnNewline = new TemplateTag(
+    stripIndentTransformer('all'),
+    // remove instances of single line breaks
+    replaceResultTransformer(/(?<=.)\n(?!\n+)/g, ''),
+    // replace instances of two or more line breaks with one line break
+    replaceResultTransformer(/(?<=.)\n{2,}/g, '\n'),
+    trimResultTransformer(),
 );
 
 export const formatNumber = (val: number | string, options?: numberFormatOptions) => {
