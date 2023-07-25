@@ -12,9 +12,8 @@ export const createHeartbeatTask = (bot: Bot) => {
             let activeCount = 0;
             return PromisePool
                 .withConcurrency(2)
-                .for(bot.client.guilds.cache)
-                .process(async ([id, dguild]) => {
-                    const guild = await getOrInsertGuild(dguild);
+                .for(bot.guilds)
+                .process(async (guild) => {
                     const active = await getActiveSubmissions(guild);
                     return active.length;
                 }).then(({results, errors}) => {
@@ -24,7 +23,7 @@ export const createHeartbeatTask = (bot: Bot) => {
                             logger.error(err);
                         }
                     } else {
-                        logger.info(`Found ${results.reduce((acc, curr) => acc + curr,0)} active submissions across ${bot.client.guilds.cache.size} guilds`);
+                        logger.info(`Found ${results.reduce((acc, curr) => acc + curr,0)} active submissions across ${bot.guilds.length} guilds`);
                     }
                 });
         },
