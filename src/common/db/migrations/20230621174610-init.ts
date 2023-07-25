@@ -114,7 +114,7 @@ const migration: Migration = {
             name: {
                 type: Sequelize.STRING,
                 allowNull: false,
-                unique: true
+                unique: false
             },
             createdAt: {
                 allowNull: false,
@@ -127,6 +127,7 @@ const migration: Migration = {
         });
 
         await queryInterface.addIndex('Users', ['name', 'guildId'], {type: 'UNIQUE'});
+        await queryInterface.addIndex('Users', ['name']);
 
         await queryInterface.createTable('VideoSubmissions', {
             id: {
