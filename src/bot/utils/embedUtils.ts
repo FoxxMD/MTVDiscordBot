@@ -91,7 +91,7 @@ export interface LogStatementOptions {
     guildId?: string
 }
 
-const stackTruncate = truncateStringToLength(1020);
+const embedTruncate = truncateStringToLength(1014);
 export const buildLogStatement = async (log: LogInfo, options?: LogStatementOptions) => {
 
     const {
@@ -111,14 +111,13 @@ export const buildLogStatement = async (log: LogInfo, options?: LogStatementOpti
         .setTitle(log.level.toUpperCase())
         .setTimestamp();
 
-    //const msgPrefix = log.byDiscordUser !== undefined ? `${userMention(log.byDiscordUser)}: ` : '';
-
-    embed.setDescription(log.message);
+    embed.setDescription(embedTruncate(log.message));
 
     if(stack !== undefined) {
+        // value needs to be less than 1024 characters
         embed.addFields({
             name: 'Stacktrace',
-            value: `\`\`\`${stackTruncate(stack)}\`\`\``
+            value: `\`\`\`${embedTruncate(stack)}\`\`\``
         })
     }
 
