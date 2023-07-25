@@ -39,7 +39,7 @@ export class PlatformManager {
         this.logger = logger.child({labels: ['Video Parser']}, mergeArr);
 
         if (this.credentials.youtube !== undefined) {
-            this.youtube = new YoutubeClient(this.credentials.youtube);
+            this.youtube = new YoutubeClient(this.credentials.youtube, logger);
         }
         if (this.credentials.vimeo !== undefined) {
             this.vimeo = new VimeoClient(this.credentials.vimeo);
