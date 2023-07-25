@@ -36,6 +36,44 @@ export const intersect = (a: Array<any>, b: Array<any>) => {
     return Array.from(intersection);
 }
 
+/**
+ * @see https://stackoverflow.com/a/64245521/1469797
+ * */
+function *setMinus(A: Array<any>, B: Array<any>) {
+    const setA = new Set(A);
+    const setB = new Set(B);
+
+    for (const v of setB.values()) {
+        if (!setA.delete(v)) {
+            yield v;
+        }
+    }
+
+    for (const v of setA.values()) {
+        yield v;
+    }
+}
+
+/**
+ * Returns elements that both arrays do not have in common
+ */
+export const symmetricalDifference = (a: Array<any>, b: Array<any>) => {
+    return Array.from(setMinus(a, b));
+}
+
+/**
+ * Returns a Set of elements from valA not in valB
+ * */
+export function difference<T = any>(valA: Set<T> | Array<T>, valB: Set<T> | Array<T>) {
+    const setA = valA instanceof Set ? valA : new Set(valA);
+    const setB = valB instanceof Set ? valB : new Set(valB);
+    const _difference = new Set(setA);
+    for (const elem of setB) {
+        _difference.delete(elem);
+    }
+    return _difference;
+}
+
 export function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -10,18 +10,8 @@ import {interact, mergeArr} from "../utils/index.js";
 import {Bot} from "../bot/Bot.js";
 import {MTVLogger} from "../common/logging.js";
 
-export const initCommands = async (client: BotClient, credentials: DiscordCredentials, bot: Bot) => {
-
+export const buildCommands = async (client: BotClient, bot: Bot) => {
     const logger = bot.logger.child({labels: ['Commands']}, mergeArr);
-    const guildLoggers = new Map<string, Logger>();
-    const getCommandLogger = (guildId: string, commandName: string) => {
-        let gl = guildLoggers.get(`${guildId}-${commandName}`);
-        if(gl === undefined) {
-            gl = bot.logger.child({labels: [`Guild ${guildId}`, `CMD ${commandName}`], discordGuild: guildId}, mergeArr);
-            guildLoggers.set(guildId, gl);
-        }
-        return gl;
-    }
 
     const slashCommandData = [];
 
@@ -55,9 +45,28 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
 
     logger.info(`Found ${slashCommandData.length} commands in ${commandFolders.length} folders`);
 
+    return slashCommandData;
+}
+
+export const initCommands = async (client: BotClient, bot: Bot) => {
+
+    const logger = bot.logger.child({labels: ['Commands']}, mergeArr);
+    const guildLoggers = new Map<string, Logger>();
+    const getCommandLogger = (guildId: string, commandName: string) => {
+        let gl = guildLoggers.get(`${guildId}-${commandName}`);
+        if(gl === undefined) {
+            gl = bot.logger.child({labels: [`Guild ${guildId}`, `CMD ${commandName}`], discordGuild: guildId}, mergeArr);
+            guildLoggers.set(guildId, gl);
+        }
+        return gl;
+    }
+
     // setup event listener for handling interactions
     client.on(Events.InteractionCreate, async interaction => {
         if (!interaction.isChatInputCommand()) return;
+        if(!bot.shouldInteract(interaction.guildId)) {
+            return;
+        }
 
         const command = (interaction.client as BotClient).commands.get(interaction.commandName);
 
@@ -90,8 +99,6 @@ export const initCommands = async (client: BotClient, credentials: DiscordCreden
             }
         }
     });
-
-    return slashCommandData;
 }
 
 export const registerGuildCommands = async (credentials: DiscordCredentials, guildId: string, slashCommandData: any[], logger: MTVLogger) => {

@@ -15,7 +15,7 @@ export const GuildSettingDefaults = {
     SUBMISSION_CHANNEL: 'firehose',
     SAFETY_CHANNEL: 'safety-logs',
     ERROR_CHANNEL: 'mtv-bot',
-    LOGGING_CHANNEL: 'server-logs',
+    LOGGING_CHANNEL: 'mtv-bot',
     FILTERING_MODE: true,
     MIN_SECONDS: 300,
     MAX_SECONDS: 3600,

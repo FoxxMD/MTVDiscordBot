@@ -120,6 +120,10 @@ export const parseConfigFromSources = async () => {
         throw new SimpleError('No discord bot token was found in merged config.');
     }
 
+    if(mergedConfig.guilds !== undefined) {
+        mergedConfig.guilds = mergedConfig.guilds.map(x => x.toString());
+    }
+
     return mergedConfig as OperatorConfig;
 }
 

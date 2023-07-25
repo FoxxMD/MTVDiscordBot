@@ -74,6 +74,7 @@
                 "debug",
                 "error",
                 "info",
+                "safety",
                 "verbose",
                 "warn"
             ],
@@ -98,6 +99,7 @@
                         "error",
                         false,
                         "info",
+                        "safety",
                         "verbose",
                         "warn"
                     ]
@@ -161,6 +163,12 @@
         },
         "database": {
             "$ref": "#/definitions/DatabaseConfig"
+        },
+        "guilds": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
         },
         "logging": {
             "$ref": "#/definitions/LoggingOptions",

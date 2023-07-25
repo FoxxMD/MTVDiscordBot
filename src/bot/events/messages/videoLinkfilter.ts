@@ -26,6 +26,9 @@ module.exports = {
             if (message.member === undefined || message.member.user.bot || message.system || !message.member.moderatable || !message.deletable) {
                 return;
             }
+            if(!bot.shouldInteract(message.guildId)) {
+                return;
+            }
 
             if (message.channel.isThread) {
                 const thread = message.channel as ThreadChannel;

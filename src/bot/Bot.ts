@@ -1,9 +1,9 @@
 import {BotClient} from "../BotClient.js";
 import {Sequelize} from "sequelize";
 import {Logger} from "@foxxmd/winston";
-import {mergeArr} from "../utils/index.js";
+import {difference, mergeArr} from "../utils/index.js";
 import {OperatorConfig} from "../common/infrastructure/OperatorConfig.js";
-import {initCommands, initEvents, registerGuildCommands} from "../command/handler.js";
+import {buildCommands, initCommands, initEvents, registerGuildCommands} from "../command/handler.js";
 import {Events, Guild as DiscordGuild, TextBasedChannel, TextChannel, userMention} from "discord.js";
 import {isLogLineMinLevel, logLevels, MTVLogger} from "../common/logging.js";
 import {getOrInsertGuild, getOrInsertVideo, getVideoByVideoId} from "./functions/repository.js";
@@ -20,6 +20,7 @@ import {GuildSettings} from "../common/db/models/GuildSettings.js";
 import {detectErrorStack} from "../utils/StringUtils.js";
 import ReadableStream = NodeJS.ReadableStream;
 import {buildLogStatement} from "./utils/embedUtils.js";
+import {commaListsAnd} from "common-tags";
 
 export class Bot {
     public client: BotClient;
@@ -27,6 +28,7 @@ export class Bot {
     public logger: MTVLogger;
     public config: OperatorConfig;
     public reddit?: RedditClient;
+    public guilds: Guild[] = [];
 
     constructor(client: BotClient, db: Sequelize, logger: MTVLogger, config: OperatorConfig) {
         this.client = client;
@@ -40,7 +42,7 @@ export class Bot {
         const scheduler = new ToadScheduler()
 
         try {
-            const slashData = await initCommands(this.client, this.config.credentials.discord, this);
+            const slashData = await buildCommands(this.client, this);
 
             const cr = new Promise((resolve, reject) => {
                 this.client.once(Events.ClientReady, (msg) => {
@@ -70,12 +72,35 @@ export class Bot {
             logger.info('Bot is now ready to init');
             this.setupChannelLogging(this.logger.stream());
 
+            for (const [id, dguild] of this.client.guilds.cache) {
+                let guild: Guild;
+                if(this.config.guilds !== undefined) {
+                    if(this.config.guilds.some(x => x === id)) {
+                        guild = await getOrInsertGuild(dguild, this.logger);
+                        this.guilds.push(guild);
+                    } else {
+                        this.logger.warn(`Guild ${id} (${dguild.name}) not included in config, will not register for bot interaction`);
+                    }
+                } else {
+                    guild = await getOrInsertGuild(dguild, this.logger);
+                    this.guilds.push(guild);
+                }
+
+                if(guild !== undefined) {
+                    await registerGuildCommands(this.config.credentials.discord, guild.id, slashData, this.logger);
+                }
+            }
+            if(this.config.guilds !== undefined) {
+                const registeredGuildIds = this.guilds.map(x => x.id);
+                const unregisteredIds = difference<string>(this.config.guilds, registeredGuildIds);
+                if(unregisteredIds.size > 0) {
+                    this.logger.warn(commaListsAnd`Guilds ids defined in config but Bot has not joined: ${Array.from(unregisteredIds.values())}`);
+                }
+            }
+
+            await initCommands(this.client, this);
             await initEvents(this.client, this);
 
-            for (const [id, guild] of this.client.guilds.cache) {
-                await getOrInsertGuild(guild, this.logger);
-                await registerGuildCommands(this.config.credentials.discord, guild.id, slashData, this.logger);
-            }
             this.logger.info('Bot Init complete');
 
             if (this.config.credentials.reddit !== undefined) {
@@ -189,16 +214,6 @@ export class Bot {
                 }
 
                 try {
-                    // let cleanedMessage = log[MESSAGE]
-                    //     .slice(26) // remove timestamp since discord has their own on message
-                    //     .replace(/^(\w+)\s*:/, '$1:') // remove whitespace from level padding
-                    //     .replace(`[Guild ${guild.id}]`, `${byDiscordUser !== undefined ? `[${userMention(byDiscordUser)}]` : ''}`) // remove guild label since we will be reading it in the guild anyway and replace with user who executed, if provided
-                    //     .slice(0, 1999); // make sure not to hit message character limit
-                    // const stackRes = detectErrorStack(cleanedMessage);
-                    // if (stackRes !== undefined) {
-                    //     cleanedMessage = `${cleanedMessage.slice(0, stackRes.index)}\n\`\`\`${cleanedMessage.slice(stackRes.index)}\`\`\``
-                    // }
-                    // await channel.send({content: cleanedMessage});
                     const embed = await buildLogStatement(log, {guildId: guild !== undefined ? guild.id : undefined});
                     await channel.send({embeds: [embed]});
                 } catch (e) {
@@ -206,5 +221,9 @@ export class Bot {
                 }
             }
         });
+    }
+
+    shouldInteract = (guildId: string) => {
+        return this.guilds.some(x => x.id === guildId);
     }
 }

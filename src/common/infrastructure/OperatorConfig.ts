@@ -59,4 +59,5 @@ export interface OperatorJsonConfig {
     logging?: LoggingOptions,
     credentials?: Credentials
     database?: DatabaseConfig
+    guilds?: string[]
 }
