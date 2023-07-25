@@ -31,7 +31,7 @@ export const buildStandingProfile = async (user: User) => {
     const embed = new EmbedBuilder()
         .setColor(0x0099FF)
         .setTitle('Your Standing')
-        .setDescription(`Level: ${level.name} (${level.allowedSubmissions} submissions allowed in ${period.asHours()} period)`)
+        .setDescription(`Level: ${level.name} (${level.allowedSubmissions} submissions allowed in ${period.asHours()} hour period)`)
         .setTimestamp()
 
     if (creators.length > 0) {
