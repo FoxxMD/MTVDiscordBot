@@ -68,8 +68,16 @@ module.exports = {
             subCommand.setName('rate-limiting')
                 .setDescription('Display or set submission rate limiting for users')
                 .addBooleanOption(opt =>
-                    opt.setName('limiting')
+                    opt.setName('enable')
                         .setDescription('Set limiting mode')
+                        .setRequired(false))
+        )
+        .addSubcommand(subCommand =>
+            subCommand.setName('filtering')
+                .setDescription('Display or set chat filtering for users')
+                .addBooleanOption(opt =>
+                    opt.setName('enable')
+                        .setDescription('Enable or disable filtering')
                         .setRequired(false))
         )
         .addSubcommand(subCommand =>
@@ -143,14 +151,17 @@ module.exports = {
                 }
                 break;
             case 'rate-limiting':
-                const limit = interaction.options.getBoolean('limiting');
-                if(limit === null || limit === undefined) {
-                    const limitSetting = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
-                    await interaction.reply({content: `Rate Limiting: ${limitSetting ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
+            case 'filtering':
+                const enabled = interaction.options.getBoolean('enable');
+                const boolSettingName = subCommand === 'rate-limiting' ? GuildSettings.RATE_LIMIT_MODE : GuildSettings.FILTERING_MODE;
+                const boolDisplayName = subCommand === 'rate-limiting' ? 'Rate Limiting' : 'Chat Filtering';
+                if(enabled === null || enabled === undefined) {
+                    const limitSetting = await guild.getSettingValue<boolean>(boolSettingName);
+                    await interaction.reply({content: `${boolDisplayName}: ${limitSetting ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
                 } else {
-                    await guild.upsertSetting(GuildSettings.RATE_LIMIT_MODE, limit, true);
-                    logger.info(`Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`,{sendToGuild: true, byDiscordUser: interaction.member.user.id});
-                    await interaction.reply({content: `Set => Rate Limiting: ${limit ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
+                    await guild.upsertSetting(boolSettingName, enabled, true);
+                    logger.info(`Set => ${boolDisplayName}: ${enabled ? 'ENABLED' : 'DISABLED'}`,{sendToGuild: true, byDiscordUser: interaction.member.user.id});
+                    await interaction.reply({content: `Set => ${boolDisplayName}: ${enabled ? 'ENABLED' : 'DISABLED'}`, ephemeral: true});
                 }
                 break;
             case 'category-showcase':

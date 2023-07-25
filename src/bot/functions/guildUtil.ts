@@ -79,6 +79,7 @@ export const populateGuildDefaults = async (guild: Guild, discGuild: DiscordGuil
     await guild.upsertSetting(GuildSettings.MIN_SECONDS, GuildSettingDefaults.MIN_SECONDS);
     await guild.upsertSetting(GuildSettings.MAX_SECONDS, GuildSettingDefaults.MAX_SECONDS);
     await guild.upsertSetting(GuildSettings.RATE_LIMIT_MODE, GuildSettingDefaults.RATE_LIMIT_MODE);
+    await guild.upsertSetting(GuildSettings.FILTERING_MODE, GuildSettingDefaults.FILTERING_MODE);
 }
 
 export const getShowcaseChannelFromCategory = async (cat: CategoryChannel, duration: number) => {

@@ -8,6 +8,7 @@ export const GuildSettings = {
     RATE_LIMIT_MODE: 'rateLimitingMode',
     CATEGORY_SHOWCASE: 'categoryShowcase',
     CATEGORY_OC: 'categoryOc',
+    FILTERING_MODE: 'filtering'
 };
 
 export const GuildSettingDefaults = {
@@ -15,6 +16,7 @@ export const GuildSettingDefaults = {
     SAFETY_CHANNEL: 'safety-logs',
     ERROR_CHANNEL: 'mtv-bot',
     LOGGING_CHANNEL: 'server-logs',
+    FILTERING_MODE: true,
     MIN_SECONDS: 300,
     MAX_SECONDS: 3600,
     RATE_LIMIT_MODE: true
