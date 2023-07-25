@@ -132,7 +132,7 @@ module.exports = {
         }
 
         // can ignore self-promo if user is allowed
-        if (!hasAllowedRole && deets.creator.id !== undefined) {
+        if (!hasAllowedRole && deets.creator?.id !== undefined) {
             // now check creator popularity (gated by allow role check to reduce platform api calls)
             const creator = await manager.upsertCreatorFromDetails(deets.platform, deets.creator as MinimalCreatorDetails);
             await checkCreatorBlacklisted(interaction, creator);
