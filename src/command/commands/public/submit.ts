@@ -166,7 +166,7 @@ module.exports = {
                 }
                 interact = confirmation;
             }
-            await addFirehoseVideo(interact,  sanitizedUrl,deets as MinimalVideoDetails, user);
+            await addFirehoseVideo(interact,  sanitizedUrl,deets as MinimalVideoDetails, user, bot);
         } else {
 
             const titleComp = new TextInputBuilder()
@@ -211,7 +211,7 @@ module.exports = {
                 if (interaction.replied) {
                     return;
                 }
-                await addFirehoseVideo(modalRes, sanitizedUrl,deets as MinimalVideoDetails, user);
+                await addFirehoseVideo(modalRes, sanitizedUrl,deets as MinimalVideoDetails, user, bot);
             } catch (e) {
                 throw e;
             }

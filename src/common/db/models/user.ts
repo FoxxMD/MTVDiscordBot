@@ -31,6 +31,8 @@ import {ShowcasePost} from "./ShowcasePost.js";
 import {AllowDenyModifier, AllowDenyModifierData} from "./AllowDenyModifier.js";
 import dayjs, {Dayjs} from "dayjs";
 import {SubmissionTrustLevel} from "./SubmissionTrustLevel.js";
+import {Bot} from "../../../bot/Bot.js";
+import {IRateLimiterRes} from "rate-limiter-flexible";
 
 export class User extends Model<InferAttributes<User, {
     omit: 'submissions' | 'creators' | 'trustLevel'
@@ -193,6 +195,26 @@ export class User extends Model<InferAttributes<User, {
         await userLevel.setLevel(level);
         await userLevel.setGivenBy(givenByUser);
         await userLevel.save();
+    }
+
+    getSubmissionLimiter = async (bot: Bot) => {
+        const level = await this.getSubmissionLevel();
+        return await bot.limiterFactory.getLimiter('submit', level.allowedSubmissions, level.timePeriod);
+    }
+
+    getSubmissionLimitInfo = async (bot: Bot) => {
+        const limiter = await this.getSubmissionLimiter(bot);
+        let limitInfo: IRateLimiterRes = await limiter.get(this.id);
+        if (limitInfo === null) {
+            const level = await this.getSubmissionLevel();
+            limitInfo = {
+                remainingPoints: level.allowedSubmissions,
+                msBeforeNext: level.timePeriod * 1000,
+                consumedPoints: 0,
+                isFirstInDuration: false
+            }
+        }
+        return limitInfo;
     }
 }
 

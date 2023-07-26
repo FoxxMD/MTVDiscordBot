@@ -85,7 +85,7 @@ module.exports = {
             if (interaction.replied) {
                 return;
             }
-            await addFirehoseVideo(interaction, sanitizedUrl, deets as MinimalVideoDetails, user);
+            await addFirehoseVideo(interaction, sanitizedUrl, deets as MinimalVideoDetails, user, bot);
         } else {
 
             const titleComp = new TextInputBuilder()
@@ -131,7 +131,7 @@ module.exports = {
                     return;
                 }
                 logger.info(`Submitted ${url} for User ${userMention(user.discordId)}`, {sendToGuild: true, byDiscordUser: interaction.member.user.id})
-                await addFirehoseVideo(modalRes, sanitizedUrl, deets as MinimalVideoDetails, user);
+                await addFirehoseVideo(modalRes, sanitizedUrl, deets as MinimalVideoDetails, user, bot);
             } catch (e) {
                 throw e;
             }

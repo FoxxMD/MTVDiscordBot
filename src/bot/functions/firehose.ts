@@ -27,7 +27,7 @@ import {
 import dayjs from "dayjs";
 import {Guild} from "../../common/db/models/Guild.js";
 import {Logger} from "@foxxmd/winston";
-import {mergeArr} from "../../utils/index.js";
+import {interact, mergeArr} from "../../utils/index.js";
 import {addShowcaseVideo} from "./showcase.js";
 import {ErrorWithCause} from "pony-cause";
 import {commaListsAnd} from "common-tags";
@@ -35,8 +35,10 @@ import {REGEX_VOTING_ACTIVE} from "../../common/infrastructure/Regex.js";
 import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {DiscordMessageInfo} from "../../common/db/models/DiscordMessageInfo.js";
 import {MTVLogger} from "../../common/logging.js";
+import {Bot} from "../Bot.js";
+import * as repl from "repl";
 
-export const addFirehoseVideo = async (interaction: InteractionLike, url: string, video: MinimalVideoDetails, user: User) => {
+export const addFirehoseVideo = async (interaction: InteractionLike, url: string, video: MinimalVideoDetails, user: User, bot: Bot) => {
 
     const firehoseChannel = await GuildSetting.findOne({
         where: {
@@ -74,12 +76,26 @@ export const addFirehoseVideo = async (interaction: InteractionLike, url: string
         const submissionMessage = await channel.send(`${title}\n${detailParts.map(x => `* ${x}`).join('\n')}`);
         const subUrl: string = submissionMessage.url;
 
-        if(interaction.isMessageComponent()) {
-            await interaction.update({content: `Video Submitted! ${subUrl}`, components: []});
-        } else if(!interaction.replied) {
-            await interaction.reply({content: `Video Submitted! ${subUrl}`, ephemeral: true});
-        } else {
-            await interaction.followUp({content: `Video Submitted! ${subUrl}`, ephemeral: true});
+        const msgParts = [`Video Submitted! ${subUrl}`];
+
+        const guild = await user.getGuild();
+        const limited = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
+        if(limited && user.discordId === interaction.user.id) {
+            // add rate limit info if limit mode is on and we are replying to the same user who submitted the video
+            const limitInfo = await user.getSubmissionLimitInfo(bot);
+            const windowEnds = dayjs().add(limitInfo.msBeforeNext, 'milliseconds');
+            if(limitInfo.remainingPoints === 0) {
+                msgParts.push(`Next video may submitted after ${time(windowEnds.toDate())}`);
+            } else {
+                msgParts.push(`You may submit ${limitInfo.remainingPoints} more videos in the time period ending at ${time(windowEnds.toDate())}, at which point your quota will reset.`);
+            }
+        }
+
+        let replyError;
+        try {
+            await interact(interaction, {content: msgParts.join(' '), ephemeral: true});
+        } catch (e) {
+            replyError = e;
         }
 
         await submissionMessage.react(VideoReactions.UP);
@@ -104,6 +120,9 @@ export const addFirehoseVideo = async (interaction: InteractionLike, url: string
             downvotes: 0,
             active: true
         });
+        if(replyError !== undefined) {
+            throw new ErrorWithCause('Video Submission successful but there was an error while reply to command', {cause: replyError});
+        }
     } catch (e) {
         throw e;
     }

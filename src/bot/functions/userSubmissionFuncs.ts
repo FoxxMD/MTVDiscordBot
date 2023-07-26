@@ -33,7 +33,7 @@ import {SubmissionTrustLevel} from "../../common/db/models/SubmissionTrustLevel.
 export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User, bot: Bot): Promise<[RateLimiterRes, SubmissionTrustLevel, string?]> => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
     const level = await user.getSubmissionLevel();
-    const limiter = await bot.limiterFactory.getLimiter('submit', level.allowedSubmissions, level.timePeriod);
+    const limiter = await user.getSubmissionLimiter(bot);
     try {
         const res = await limiter.consume(user.id, 1);
         return [res, level];

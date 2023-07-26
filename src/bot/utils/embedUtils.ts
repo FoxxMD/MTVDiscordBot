@@ -180,8 +180,8 @@ export const EmbedSidebarColors: Record<string, HexColorString | number> = {
     ORANGE: '#fa6a0a',
     GREEN: '#15ec15',
     BLUE: '#0e6feb',
-    PINK: '#B303F1FF',
-    BLACK: Colors.NotQuiteBlack
+    PINK: '#b427ff',
+    BLACK: '#1c1b1b'
 }
 
 export const embedLogLevelColor = (level: LogLevel): HexColorString | number | undefined => {
