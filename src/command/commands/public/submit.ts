@@ -32,6 +32,7 @@ import {memberHasRoleType} from "../../../bot/functions/userUtil.js";
 import {ROLE_TYPES} from "../../../common/db/models/SpecialRole.js";
 import {videoDetailsToUrl} from "../../../common/contentPlatforms/UrlParser.js";
 import {MTVLogger} from "../../../common/logging.js";
+import {interact} from "../../../utils/index.js";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -93,12 +94,10 @@ module.exports = {
 
         const guild = await user.getGuild();
         const limited = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
-
-        if (limited) {
-            await rateLimitUser(interaction, user);
-            if (interaction.replied) {
-                return;
-            }
+        const [limitRes, replyOnLimited] = await rateLimitUser(interaction, user, bot);
+        if (replyOnLimited !== undefined && limited) {
+            await interact(interaction, {content: replyOnLimited, ephemeral: true});
+            return;
         }
 
         const [deets, urlDetails, existingVideo] = await manager.getVideoDetails(url);

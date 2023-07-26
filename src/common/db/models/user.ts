@@ -84,6 +84,10 @@ export class User extends Model<InferAttributes<User, {
         modifiers: Association<User, AllowDenyModifier>
     };
 
+    get uniqueDiscordId(): NonAttribute<string> {
+        return `${this.discordId}-${this.guildId}`;
+    }
+
     isRateLimited = async (date: Date) => {
         const userLevel = await this.getTrustLevel();
         const level = await userLevel.getLevel();

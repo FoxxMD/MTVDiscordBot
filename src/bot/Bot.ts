@@ -21,6 +21,8 @@ import {detectErrorStack} from "../utils/StringUtils.js";
 import ReadableStream = NodeJS.ReadableStream;
 import {buildLogStatement} from "./utils/embedUtils.js";
 import {commaListsAnd} from "common-tags";
+import Redis from 'ioredis';
+import {RateLimiterFactory} from "../common/RateLimiterFactory.js";
 
 export class Bot {
     public client: BotClient;
@@ -29,12 +31,18 @@ export class Bot {
     public config: OperatorConfig;
     public reddit?: RedditClient;
     public guilds: Guild[] = [];
+    public limiterFactory: RateLimiterFactory;
+    public redis?: Redis;
 
     constructor(client: BotClient, db: Sequelize, logger: MTVLogger, config: OperatorConfig) {
         this.client = client;
         this.db = db;
         this.logger = logger.child({labels: ['Bot']}, mergeArr);
         this.config = config;
+        if(this.config.redis !== undefined) {
+            this.redis = new Redis(this.config.redis);
+        }
+        this.limiterFactory = new RateLimiterFactory(this.config.rateLimitBackend ?? 'memory', this.db, this.redis);
     }
 
     async init(logger: Logger) {
@@ -42,6 +50,7 @@ export class Bot {
         const scheduler = new ToadScheduler()
 
         try {
+
             const slashData = await buildCommands(this.client, this);
 
             const cr = new Promise((resolve, reject) => {

@@ -48,6 +48,13 @@ export interface DatabaseConfig extends Pick<Options, 'username' | 'password' | 
     dialect: 'sqlite' | 'mariadb'
 }
 
+export interface RedisConfig {
+    host?: string
+    port?: number
+    username?: string
+    password?: string
+}
+
 export interface OperatorConfig extends OperatorJsonConfig {
     credentials: StrongCredentials
 }
@@ -59,5 +66,7 @@ export interface OperatorJsonConfig {
     logging?: LoggingOptions,
     credentials?: Credentials
     database?: DatabaseConfig
+    redis?: RedisConfig
+    rateLimitBackend?: 'redis' | 'db' | 'memory'
     guilds?: string[]
 }

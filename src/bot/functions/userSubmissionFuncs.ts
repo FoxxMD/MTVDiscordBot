@@ -26,21 +26,26 @@ import {ROLE_TYPES} from "../../common/db/models/SpecialRole.js";
 import {MessageActionRowComponentBuilder} from "@discordjs/builders";
 import {Creator} from "../../common/db/models/creator.js";
 import {Video} from "../../common/db/models/video.js";
+import {Bot} from "../Bot.js";
+import {RateLimiterRes} from "rate-limiter-flexible";
 
-export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User) => {
+export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User, bot: Bot): Promise<[RateLimiterRes, string?]> => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
-    if (lastSubmitted !== undefined) {
-        const remaining = await user.rateLimitRemaining(lastSubmitted.createdAt);
-        if (remaining > 0) {
-            const level = await user.getSubmissionLevel();
-            await interaction.reply({
-                content: oneLine`
-            Your current Trust Level (${level.id} - ${level.name}) allows submitting a video every ${dayjs.duration({seconds: level.timePeriod}).asHours()} hours.
-            You last submitted a video on ${time(lastSubmitted.createdAt)} and can next submit a video ${time(dayjs().add(remaining, 'seconds').toDate(), 'R')}.
-            `,
-                ephemeral: true
-            });
+    const level = await user.getSubmissionLevel();
+    const limiter = await bot.limiterFactory.getLimiter('submit', level.allowedSubmissions, level.timePeriod);
+    try {
+        const res = await limiter.consume(user.id, 1);
+        return [res];
+    } catch(e: unknown) {
+        if('msBeforeNext' in (e as object)) {
+            let r = e as RateLimiterRes;
+            const msg = oneLine`
+            Your current Trust Level (${level.id} - ${level.name}) allows submitting ${level.allowedSubmissions} videos every ${dayjs.duration({seconds: level.timePeriod}).asHours()} hours.
+            ${lastSubmitted !== undefined ? `You last submitted a video on ${time(lastSubmitted.createdAt)} and` : 'You'} can next submit a video ${time(dayjs().add(r.msBeforeNext, 'milliseconds').toDate(), 'R')}.
+            `;
+            return [r, msg];
         }
+        throw e;
     }
 }
 

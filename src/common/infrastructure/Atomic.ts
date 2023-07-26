@@ -18,6 +18,7 @@ export interface LogConfig {
     file?: string | false
     stream?: string
     console?: string
+    db?: boolean
 }
 
 export interface LogOptions {
@@ -41,10 +42,15 @@ export interface LogOptions {
      * Specify the minimum log level streamed to the console (or docker container)
      * */
     console?: LogLevel
+
+    db?: boolean
 }
 
 export const asLogOptions = (obj: LogConfig = {}): obj is LogOptions => {
     return Object.entries(obj).every(([key,  val]) => {
+        if(key === 'db') {
+            return val;
+        }
         if(key !== 'file') {
             return val === undefined || logLevels.includes(val.toLocaleLowerCase());
         }
