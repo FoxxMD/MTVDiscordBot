@@ -144,6 +144,7 @@ export const addShowcaseVideo = async (dguild: Guild, video: Video, parentLogger
             const modGiven = currentLevel.isModAssigned();
             if(!modGiven) {
                 await submitter.setCommunityTrustLevel();
+                await submitter.save();
             }
         }
     } catch (e) {
