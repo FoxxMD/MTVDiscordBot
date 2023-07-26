@@ -130,7 +130,7 @@ export interface RegExResult {
 
 export type InteractionLike = ChatInputCommandInteraction<CacheType> | ModalSubmitInteraction<CacheType> | MessageComponentInteraction<CacheType>;
 
-export type MessageLike = Message<true> | InteractionLike;
+export type MessageLike = Message<boolean> | InteractionLike;
 
 export type SpecialRoleType = 'approved' | 'janitor' | 'tos' | 'contentCreator';
 
