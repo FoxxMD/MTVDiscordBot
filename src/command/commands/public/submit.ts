@@ -64,10 +64,11 @@ module.exports = {
             ruleFail = true;
         }
         if(!ruleFail) {
-            await replyAge(interaction, user);
-        }
-        if (interaction.replied) {
-            ageFail = true;
+            const [waitingPeriodEnds, ageReply ] = await replyAge(interaction, user);
+            if(waitingPeriodEnds !== undefined) {
+                await interact(interaction, {content: ageReply, ephemeral: true});
+                ageFail = true;
+            }
         }
 
         if(!hasAllowedRole && (blacklisted || ruleFail || ageFail)) {
@@ -94,8 +95,9 @@ module.exports = {
 
         const guild = await user.getGuild();
         const limited = await guild.getSettingValue<boolean>(GuildSettings.RATE_LIMIT_MODE);
-        const [limitRes, replyOnLimited] = await rateLimitUser(interaction, user, bot);
+        const [limitRes, level, replyOnLimited] = await rateLimitUser(interaction, user, bot);
         if (replyOnLimited !== undefined && limited) {
+            logger.verbose(`Rate limited:\n > ${replyOnLimited}`, {sendToGuild: true, byDiscordUser: user.discordId});
             await interact(interaction, {content: replyOnLimited, ephemeral: true});
             return;
         }

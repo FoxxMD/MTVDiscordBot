@@ -28,14 +28,15 @@ import {Creator} from "../../common/db/models/creator.js";
 import {Video} from "../../common/db/models/video.js";
 import {Bot} from "../Bot.js";
 import {RateLimiterRes} from "rate-limiter-flexible";
+import {SubmissionTrustLevel} from "../../common/db/models/SubmissionTrustLevel.js";
 
-export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User, bot: Bot): Promise<[RateLimiterRes, string?]> => {
+export const rateLimitUser = async (interaction: ChatInputCommandInteraction<CacheType>, user: User, bot: Bot): Promise<[RateLimiterRes, SubmissionTrustLevel, string?]> => {
     const lastSubmitted = await getUserLastSubmittedVideo(user);
     const level = await user.getSubmissionLevel();
     const limiter = await bot.limiterFactory.getLimiter('submit', level.allowedSubmissions, level.timePeriod);
     try {
         const res = await limiter.consume(user.id, 1);
-        return [res];
+        return [res, level];
     } catch(e: unknown) {
         if('msBeforeNext' in (e as object)) {
             let r = e as RateLimiterRes;
@@ -43,7 +44,7 @@ export const rateLimitUser = async (interaction: ChatInputCommandInteraction<Cac
             Your current Trust Level (${level.id} - ${level.name}) allows submitting ${level.allowedSubmissions} videos every ${dayjs.duration({seconds: level.timePeriod}).asHours()} hours.
             ${lastSubmitted !== undefined ? `You last submitted a video on ${time(lastSubmitted.createdAt)} and` : 'You'} can next submit a video ${time(dayjs().add(r.msBeforeNext, 'milliseconds').toDate(), 'R')}.
             `;
-            return [r, msg];
+            return [r, level, msg];
         }
         throw e;
     }
@@ -132,17 +133,15 @@ export const replyBlacklisted = async (interaction: InteractionLike, user: User)
     }
 }
 
-export const replyAge = async (interaction: InteractionLike, user: User) => {
+export const replyAge = async (interaction: InteractionLike, user: User): Promise<[Dayjs?, string?]> => {
     const waitingPeriodOver = await checkAge(interaction, user);
     if(waitingPeriodOver !== undefined) {
-        await interaction.reply({
-            content: oneLine`
+        return [waitingPeriodOver, oneLine`
             In order to prevent spam new users must wait 24 hours after joining the server before they can submit videos.
             You may start submitting videos ${time(waitingPeriodOver.toDate(), 'R')}
-            `,
-            ephemeral: true
-        });
+            `];
     }
+    return [];
 }
 
 export const checkRules = async (interaction: InteractionLike, user: User) => {

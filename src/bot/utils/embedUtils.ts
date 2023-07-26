@@ -1,7 +1,7 @@
 import {User} from "../../common/db/models/user.js";
 import {submissionInGoodStanding} from "../functions/index.js";
 import {
-    channelMention,
+    channelMention, Colors,
     EmbedBuilder,
     HexColorString,
     TextBasedChannel,
@@ -174,18 +174,24 @@ export const buildLogStatement = async (log: LogInfo, options?: LogStatementOpti
     return embed;
 }
 
-export const EmbedSidebarColors: Record<string, HexColorString> = {
+export const EmbedSidebarColors: Record<string, HexColorString | number> = {
     RED: '#e71010',
     YELLOW: '#f5e63a',
     ORANGE: '#fa6a0a',
     GREEN: '#15ec15',
-    BLUE: '#0e6feb'
+    BLUE: '#0e6feb',
+    PINK: '#B303F1FF',
+    BLACK: Colors.NotQuiteBlack
 }
 
-export const embedLogLevelColor = (level: LogLevel): HexColorString | undefined => {
+export const embedLogLevelColor = (level: LogLevel): HexColorString | number | undefined => {
     switch (level) {
+        case 'debug':
+            return EmbedSidebarColors.BLACK;
         case 'info':
             return EmbedSidebarColors.BLUE;
+        case 'verbose':
+            return EmbedSidebarColors.PINK;
         case 'warn':
             return EmbedSidebarColors.ORANGE;
         case 'error':
