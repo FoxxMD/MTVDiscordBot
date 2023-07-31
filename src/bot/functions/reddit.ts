@@ -8,6 +8,8 @@ import {
     getRecentShowcasesByVideo,
     getRecentSubmissionsByVideo
 } from "./repository.js";
+import Submission from "snoowrap/dist/objects/Submission";
+import Comment from "snoowrap/dist/objects/Comment";
 import {RedditVideo} from "../../RedditClient.js";
 import {Guild as DiscordGuild} from "discord.js";
 import {Logger} from "@foxxmd/winston";
@@ -24,7 +26,7 @@ export const getHotToVideos = async (bot: Bot): Promise<RedditVideo[]> => {
 
     const videos: RedditVideo[] = [];
 
-    const extLinkSubmissions = hot.filter(x => !x.is_self && !x.is_video).slice(0, 5);
+    const extLinkSubmissions = hot.filter(x => !x.is_self && !x.is_video && !activityIsRemoved(x) && !activityIsFiltered(x)).slice(0, 5);
 
     for (const submission of extLinkSubmissions) {
             let video: Video;
@@ -77,4 +79,64 @@ export const processRedditToShowcase = async (dguild: DiscordGuild, videos: Redd
         // prevent rate limiting
         await sleep(3000);
     }
+}
+
+export const activityIsRemoved = (item: Submission | Comment): boolean => {
+    if(item.can_mod_post) {
+        if (asSubmission(item)) {
+            // when automod filters a post it gets this category
+            return item.banned_at_utc !== null && item.removed_by_category !== 'automod_filtered';
+        }
+        // when automod filters a comment item.removed === false
+        // so if we want to processing filtered comments we need to check for this
+        return item.banned_at_utc !== null && item.removed;
+    } else {
+        if (asSubmission(item)) {
+            return item.removed_by_category === 'moderator' || item.removed_by_category === 'deleted';
+        }
+        // in subreddits the bot does not mod it is not possible to tell the difference between a comment that was removed by the user and one that was removed by a mod
+        return item.body === '[removed]';
+    }
+}
+
+export const isSubmission = (value: any) => {
+    try {
+        return value !== null && typeof value === 'object' && (value instanceof Submission || ('name' in value && value.name !== undefined && value.name.includes('t3_')));
+    } catch (e) {
+        return false;
+    }
+}
+
+export const asSubmission = (value: any): value is Submission => {
+    return isSubmission(value);
+}
+
+export const isComment = (value: any) => {
+    try {
+        return value !== null && typeof value === 'object' && (value instanceof Comment || ('name' in value && value.name !== undefined && value.name.includes('t1_')));
+    } catch (e) {
+        return false;
+    }
+}
+
+export const asComment = (value: any): value is Comment => {
+    return isComment(value);
+}
+
+export const asActivity = (value: any): value is (Submission | Comment) => {
+    return asComment(value) || asSubmission(value);
+}
+
+export const activityIsFiltered = (item: Submission | Comment): boolean => {
+    if(item.can_mod_post) {
+        if (asSubmission(item)) {
+            // when automod filters a post it gets this category
+            return item.banned_at_utc !== null && item.removed_by_category === 'automod_filtered';
+        }
+        // when automod filters a comment item.removed === false
+        // so if we want to processing filtered comments we need to check for this
+        return item.banned_at_utc !== null && !item.removed;
+    }
+    // not possible to know if its filtered if user isn't a mod so always return false
+    return false;
 }
