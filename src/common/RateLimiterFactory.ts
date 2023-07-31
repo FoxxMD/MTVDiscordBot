@@ -7,16 +7,18 @@ import {
     RateLimiterMySQL,
     RateLimiterRedis
 } from "rate-limiter-flexible";
+import {MTVLogger} from "./logging.js";
 
 export class RateLimiterFactory {
 
     protected redis?: Redis;
     protected db: Sequelize;
     protected backend: ('memory' | 'db' | 'redis')
+    protected logger: MTVLogger;
 
     protected limiters: Map<string, RateLimiterAbstract> = new Map();
 
-    constructor(backend: ('memory' | 'db' | 'redis'), db: Sequelize, redis?: Redis) {
+    constructor(backend: ('memory' | 'db' | 'redis'), db: Sequelize, logger: MTVLogger, redis?: Redis) {
         this.backend = backend;
         this.db = db;
         this.redis = redis;
@@ -45,11 +47,28 @@ export class RateLimiterFactory {
                 ...opts
             });
         } else if (this.backend === 'db') {
+            if(this.db.getDialect() !== 'mysql') {
+                const limiterWarn = `'mariadb' is not supported by rate-limiter-flexible`;
+                if(this.redis !== undefined) {
+                    this.logger.warn(`${limiterWarn}, falling back to REDIS`);
+                    return new RateLimiterRedis({
+                        storeClient: this.redis,
+                        ...opts
+                    });
+                } else {
+                    this.logger.warn(`${limiterWarn}, falling back to MEMORY`);
+                    return new RateLimiterMemory(opts);
+                }
+            }
+
+            let limiter: RateLimiterMySQL;
             const rateLimitReadyPromise = new Promise((resolve, reject) => {
-                const limiter = new RateLimiterMySQL({
+                limiter = new RateLimiterMySQL({
                     storeClient: this.db,
                     storeType: 'sequelize',
                     dbName: 'mtv',
+                    // tableName: 'limiter',
+                    // tableCreated: true,
                     ...opts,
                 }, (err) => {
                     if (err) {
@@ -58,10 +77,9 @@ export class RateLimiterFactory {
                         resolve(limiter);
                     }
                 });
-                return limiter;
             });
-            const limited = await rateLimitReadyPromise as RateLimiterMySQL;
-            return limited;
+            await rateLimitReadyPromise;
+            return limiter;
         }
     }
 }

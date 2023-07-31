@@ -45,7 +45,7 @@ export interface StrongCredentials extends Credentials {
 }
 
 export interface DatabaseConfig extends Pick<Options, 'username' | 'password' | 'host' | 'port' | 'database'> {
-    dialect: 'sqlite' | 'mariadb'
+    dialect: 'sqlite' | 'mariadb' | 'mysql'
 }
 
 export interface RedisConfig {

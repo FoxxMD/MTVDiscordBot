@@ -48,6 +48,7 @@
     "js-video-url-parser": "github:FoxxMD/jsVideoUrlParser#updated",
     "linkifyjs": "^4.1.1",
     "mariadb": "^3.2.0",
+    "mysql2": "^3.5.2",
     "node-fetch": "^2.6.1",
     "normalize-url": "^6.1.0",
     "object-hash": "^2.2.0",

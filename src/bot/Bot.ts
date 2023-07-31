@@ -42,7 +42,7 @@ export class Bot {
         if(this.config.redis !== undefined) {
             this.redis = new Redis(this.config.redis);
         }
-        this.limiterFactory = new RateLimiterFactory(this.config.rateLimitBackend ?? 'memory', this.db, this.redis);
+        this.limiterFactory = new RateLimiterFactory(this.config.rateLimitBackend ?? 'memory', this.db, this.logger, this.redis);
     }
 
     async init(logger: Logger) {
