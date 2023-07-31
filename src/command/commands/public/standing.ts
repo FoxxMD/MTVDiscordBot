@@ -15,9 +15,10 @@ module.exports = {
                 .setRequired(false)),
     async execute(interaction: ChatInputCommandInteraction<CacheType>, logger: MTVLogger, bot: Bot) {
         const discordUser = interaction.options.getMember('user') as GuildMember | null;
-        let requestedUser = discordUser === null || discordUser === undefined ? interaction.member : discordUser;
+        const ownProfile = discordUser === null || discordUser === undefined;
+        let requestedUser = ownProfile ? interaction.member : discordUser;
         const user = await getOrInsertUser(requestedUser,  interaction.guild);
-        const standing = await buildStandingProfile(user);
+        const standing = await buildStandingProfile(bot, user, ownProfile);
         await interaction.reply({embeds: [standing], ephemeral: true});
     }
 }

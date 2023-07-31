@@ -11,14 +11,15 @@ import {
 } from "discord.js";
 import {
     buildDiscordMessageLink,
-    detectErrorStack,
+    detectErrorStack, formatNumber,
     markdownTag,
     truncateStringToLength
 } from "../../utils/StringUtils.js";
 import {LogInfo, LogLevel, MessageLike} from "../../common/infrastructure/Atomic.js";
 import dayjs from "dayjs";
+import {Bot} from "../Bot.js";
 
-export const buildStandingProfile = async (user: User) => {
+export const buildStandingProfile = async (bot: Bot, user: User, ownProfile?: boolean) => {
     const submissions = await user.getSubmissions();
     const submissionsWithGoodStanding = submissions.filter(x => submissionInGoodStanding(x)).length;
     const [upVotes, downVotes] = submissions.reduce((acc, curr) => {
@@ -43,8 +44,23 @@ export const buildStandingProfile = async (user: User) => {
 
     embed.addFields({
         name: 'First Submission Seen',
-        value: submissions.length === 0 ? 'Just Lurking!' : time(submissions[0].createdAt)
-    })
+        value: submissions.length === 0 ? 'Just Lurking!' : time(submissions[0].createdAt),
+        inline: ownProfile === true
+    });
+    if(ownProfile) {
+        const limitInfo = await user.getSubmissionLimitInfo(bot);
+        let quotaInfo = `Quota has not been used, all submissions are available.`;
+        if(limitInfo.remainingPoints === -2) {
+            quotaInfo = `Next video may be submitted ${time(dayjs().add(limitInfo.msBeforeNext, 'milliseconds').toDate(), 'R')}`
+        } else if (limitInfo.consumedPoints > -2) {
+            quotaInfo = `${limitInfo.remainingPoints} more videos may be submitted in the next ${formatNumber(dayjs.duration(limitInfo.msBeforeNext, 'ms').asHours(), {toFixed: 0, round: {enable: true, indicate: true}})} hours.`;
+        }
+        embed.addFields({
+            name: 'Submission Quota',
+            value: quotaInfo,
+            inline: true
+        });
+    }
 
     let lastSubs = '-';
     if (submissions.length > 0) {
